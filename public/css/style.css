@@ -11,9 +11,22 @@
 
 body {
   margin: 0;
-  background: linear-gradient(180deg, #14141a, #1f1f27);
   min-height: 100vh;
   color: var(--text);
+  position: relative;
+}
+
+/* Vervaagde Halloween-achtergrond, met donkere overlay zodat tekst leesbaar blijft */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background:
+    linear-gradient(180deg, rgba(15, 15, 18, 0.88), rgba(20, 20, 26, 0.92)),
+    url("../images/halloween-bg.jpg") center / cover no-repeat fixed;
+  filter: blur(3px);
+  opacity: 0.6;
 }
 
 .container {
