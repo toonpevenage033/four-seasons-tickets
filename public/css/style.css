@@ -16,17 +16,16 @@ body {
   position: relative;
 }
 
-/* Vervaagde Halloween-achtergrond, met donkere overlay zodat tekst leesbaar blijft */
+/* Vervaagde Halloween-achtergrond, met lichte overlay zodat tekst leesbaar blijft */
 body::before {
   content: "";
   position: fixed;
   inset: 0;
   z-index: -1;
   background:
-    linear-gradient(180deg, rgba(15, 15, 18, 0.88), rgba(20, 20, 26, 0.92)),
+    linear-gradient(180deg, rgba(10, 10, 14, 0.35), rgba(10, 10, 14, 0.55)),
     url("../images/halloween-bg.jpg") center / cover no-repeat fixed;
-  filter: blur(3px);
-  opacity: 0.6;
+  filter: blur(2px) saturate(1.1);
 }
 
 .container {
