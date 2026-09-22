@@ -142,13 +142,18 @@ app.post("/api/orders", async (req, res) => {
       accountHolder: process.env.PAYMENT_ACCOUNT_HOLDER,
     };
 
-    await sendPaymentInstructionsEmail({
-      to: created.order.email,
-      name: created.order.name,
-      tier,
-      quantity: qty,
-      ...paymentInfo,
-    });
+    // De betaalinfo staat sowieso al op het scherm; een mislukte mail mag de bestelling niet blokkeren.
+    try {
+      await sendPaymentInstructionsEmail({
+        to: created.order.email,
+        name: created.order.name,
+        tier,
+        quantity: qty,
+        ...paymentInfo,
+      });
+    } catch (err) {
+      console.error("Fout bij versturen betaalinstructie-e-mail:", err);
+    }
 
     res.json(paymentInfo);
   } catch (err) {

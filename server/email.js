@@ -43,12 +43,14 @@ async function sendTicketsEmail({ to, name, tier, tickets, orderId }) {
     </div>
   `;
 
-  return client.emails.send({
+  const result = await client.emails.send({
     from: process.env.EMAIL_FROM,
     to,
     subject: `Je ${tickets.length > 1 ? "tickets" : "ticket"} voor ${EVENT.name}`,
     html,
   });
+  if (result.error) throw new Error(result.error.message || "Resend gaf een fout terug.");
+  return result;
 }
 
 async function sendPaymentInstructionsEmail({ to, name, tier, quantity, reference, amountFormatted, iban, accountHolder }) {
@@ -69,12 +71,14 @@ async function sendPaymentInstructionsEmail({ to, name, tier, quantity, referenc
     </div>
   `;
 
-  return client.emails.send({
+  const result = await client.emails.send({
     from: process.env.EMAIL_FROM,
     to,
     subject: `Rond je betaling af voor ${EVENT.name} — ref. ${reference}`,
     html,
   });
+  if (result.error) throw new Error(result.error.message || "Resend gaf een fout terug.");
+  return result;
 }
 
 module.exports = { sendTicketsEmail, sendPaymentInstructionsEmail };
