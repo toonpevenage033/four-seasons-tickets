@@ -2,6 +2,42 @@ const statusBox = document.getElementById("status");
 const form = document.getElementById("order-form");
 const formError = document.getElementById("form-error");
 const paymentInstructions = document.getElementById("payment-instructions");
+const countdownBox = document.getElementById("countdown");
+
+let countdownTimer = null;
+
+function stopCountdown() {
+  clearInterval(countdownTimer);
+  countdownTimer = null;
+  countdownBox.hidden = true;
+}
+
+function startCountdown(targetDate) {
+  const target = new Date(targetDate).getTime();
+  countdownBox.hidden = false;
+
+  function tick() {
+    const diff = target - Date.now();
+    if (diff <= 0) {
+      stopCountdown();
+      loadStatus(); // verkoop is gestart, ververs de status
+      return;
+    }
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+    const minutes = Math.floor((diff / (1000 * 60)) % 60);
+    const seconds = Math.floor((diff / 1000) % 60);
+
+    document.getElementById("cd-days").textContent = String(days).padStart(2, "0");
+    document.getElementById("cd-hours").textContent = String(hours).padStart(2, "0");
+    document.getElementById("cd-minutes").textContent = String(minutes).padStart(2, "0");
+    document.getElementById("cd-seconds").textContent = String(seconds).padStart(2, "0");
+  }
+
+  clearInterval(countdownTimer);
+  tick();
+  countdownTimer = setInterval(tick, 1000);
+}
 
 async function loadStatus() {
   const res = await fetch("/api/status");
@@ -10,9 +46,15 @@ async function loadStatus() {
   if (!data.onSale) {
     statusBox.textContent = data.soldOut ? "Uitverkocht 😢" : data.message;
     form.hidden = true;
+    if (!data.soldOut && data.nextTierStart) {
+      startCountdown(data.nextTierStart);
+    } else {
+      stopCountdown();
+    }
     return;
   }
 
+  stopCountdown();
   statusBox.innerHTML = `
     <div>${data.tier.label} tarief</div>
     <div class="price">€ ${data.tier.priceFormatted}</div>
