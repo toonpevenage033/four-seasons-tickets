@@ -69,6 +69,9 @@ async function updateOrder(orderId, action) {
     alert(data.error || "Er ging iets mis.");
     return;
   }
+  if (data.emailError) {
+    alert(data.emailError);
+  }
   loadOrders();
 }
 

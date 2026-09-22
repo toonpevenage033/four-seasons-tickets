@@ -196,15 +196,23 @@ app.post("/api/admin/orders/:id/approve", requireAdmin, async (req, res) => {
   const ticketsWithQr = await Promise.all(
     result.tickets.map(async (t) => ({ ...t, qrDataUrl: await generateQrDataUrl(t.code) }))
   );
-  await sendTicketsEmail({
-    to: result.order.email,
-    name: result.order.name,
-    tier: tierMeta,
-    tickets: ticketsWithQr,
-    orderId: result.order.id,
-  });
 
-  res.json({ ok: true });
+  // Ticket(s) zijn al aangemaakt; een mislukte mail mag dat niet ongedaan maken.
+  let emailError = null;
+  try {
+    await sendTicketsEmail({
+      to: result.order.email,
+      name: result.order.name,
+      tier: tierMeta,
+      tickets: ticketsWithQr,
+      orderId: result.order.id,
+    });
+  } catch (err) {
+    console.error("Fout bij versturen ticket-e-mail:", err);
+    emailError = "Ticket is aangemaakt, maar de e-mail kon niet worden verstuurd. Probeer het later opnieuw of stuur de tickets handmatig door.";
+  }
+
+  res.json({ ok: true, emailError });
 });
 
 // Admin: wijs een bestelling af (bv. geen betaling ontvangen) zodat de plekken vrijkomen.
