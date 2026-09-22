@@ -17,7 +17,7 @@ const TIERS = [
     id: "earlybird",
     label: "Early Bird",
     priceCents: 1050,
-    start: "2026-09-24T15:00:00",
+    start: "2020-01-01T00:00:00",
     end: "2026-10-01T00:00:00",
   },
   {
