@@ -220,6 +220,35 @@ app.post("/api/admin/orders/:id/approve", requireAdmin, async (req, res) => {
   res.json({ ok: true, emailError });
 });
 
+// Admin: stuur de ticket-e-mail nogmaals (bv. na een eerdere mislukte poging).
+app.post("/api/admin/orders/:id/resend-email", requireAdmin, async (req, res) => {
+  const data = read();
+  const order = data.orders.find((o) => o.id === req.params.id);
+  if (!order) return res.status(404).json({ error: "Bestelling niet gevonden." });
+  if (order.status !== "paid") return res.status(409).json({ error: "Bestelling is nog niet bevestigd." });
+
+  const tickets = data.tickets.filter((t) => t.orderId === order.id);
+  if (tickets.length === 0) return res.status(404).json({ error: "Geen tickets gevonden voor deze bestelling." });
+
+  const tierMeta = require("./pricing").TIERS.find((t) => t.id === order.tierId);
+  try {
+    const ticketsWithQr = await Promise.all(
+      tickets.map(async (t) => ({ ...t, qrDataUrl: await generateQrDataUrl(t.code) }))
+    );
+    await sendTicketsEmail({
+      to: order.email,
+      name: order.name,
+      tier: tierMeta,
+      tickets: ticketsWithQr,
+      orderId: order.id,
+    });
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("Fout bij opnieuw versturen ticket-e-mail:", err);
+    res.status(502).json({ error: "Versturen mislukte opnieuw: " + err.message });
+  }
+});
+
 // Admin: wijs een bestelling af (bv. geen betaling ontvangen) zodat de plekken vrijkomen.
 app.post("/api/admin/orders/:id/reject", requireAdmin, async (req, res) => {
   const result = await transact(async (data) => {

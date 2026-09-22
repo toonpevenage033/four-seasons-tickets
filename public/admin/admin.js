@@ -55,6 +55,14 @@ function renderOrders(orders) {
       actionCell.append(approveBtn, rejectBtn);
     }
 
+    if (order.status === "paid") {
+      const resendBtn = document.createElement("button");
+      resendBtn.textContent = "Mail opnieuw versturen";
+      resendBtn.className = "approve-btn";
+      resendBtn.onclick = () => updateOrder(order.id, "resend-email");
+      actionCell.append(resendBtn);
+    }
+
     ordersBody.appendChild(tr);
   }
 }
