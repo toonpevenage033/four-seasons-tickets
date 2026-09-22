@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tickets — Four Seasons Feest</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <main class="container">
+    <h1>Tickets — Four Seasons Feest</h1>
+    <p class="event-details">📍 Four Seasons, Kastanjelaan 1, Leusden<br />📅 31 oktober, 21:00 – 02:00</p>
+
+    <div id="status" class="status-box">Laden...</div>
+
+    <form id="order-form" class="order-form" hidden>
+      <label>
+        Naam
+        <input type="text" name="name" required />
+      </label>
+      <label>
+        E-mailadres
+        <input type="email" name="email" required />
+      </label>
+      <label>
+        Aantal tickets
+        <input type="number" name="quantity" min="1" max="6" value="1" required />
+      </label>
+      <button type="submit">Reserveer tickets</button>
+      <p id="form-error" class="error" hidden></p>
+    </form>
+
+    <div id="payment-instructions" class="payment-instructions" hidden>
+      <h2>Bijna klaar!</h2>
+      <p>Maak het bedrag hieronder over. Zodra we je betaling zien, ontvang je je ticket(s) met QR-code per e-mail (kan enige tijd duren, wij bevestigen dit handmatig).</p>
+      <dl>
+        <dt>Bedrag</dt>
+        <dd id="pi-amount"></dd>
+        <dt>IBAN</dt>
+        <dd id="pi-iban"></dd>
+        <dt>T.n.v.</dt>
+        <dd id="pi-holder"></dd>
+        <dt>Omschrijving (verplicht!)</dt>
+        <dd id="pi-reference" class="reference"></dd>
+      </dl>
+      <p><strong>Let op:</strong> zonder de juiste omschrijving kunnen we je betaling niet koppelen aan je bestelling.</p>
+    </div>
+  </main>
+
+  <script src="js/main.js"></script>
+</body>
+</html>

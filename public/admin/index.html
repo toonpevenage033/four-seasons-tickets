@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin — Bestellingen Four Seasons Feest</title>
+  <link rel="stylesheet" href="../css/style.css" />
+</head>
+<body>
+  <main class="container admin-wrap">
+    <h1>Bestellingen beheren</h1>
+
+    <form id="token-form" class="order-form">
+      <label>
+        Admin-toegangscode
+        <input type="password" name="token" required />
+      </label>
+      <button type="submit">Inloggen</button>
+    </form>
+
+    <div id="app" hidden>
+      <button id="refresh-btn" class="secondary-btn">Ververs lijst</button>
+      <table class="orders-table">
+        <thead>
+          <tr>
+            <th>Datum</th>
+            <th>Naam</th>
+            <th>E-mail</th>
+            <th>Aantal</th>
+            <th>Bedrag</th>
+            <th>Referentie</th>
+            <th>Status</th>
+            <th>Actie</th>
+          </tr>
+        </thead>
+        <tbody id="orders-body"></tbody>
+      </table>
+    </div>
+  </main>
+
+  <script src="admin.js"></script>
+</body>
+</html>

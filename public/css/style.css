@@ -1,0 +1,175 @@
+:root {
+  color-scheme: light;
+  --bg: #0f0f12;
+  --card: #ffffff;
+  --accent: #c9a24b;
+  --text: #1a1a1a;
+  font-family: "Segoe UI", Arial, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: linear-gradient(180deg, #14141a, #1f1f27);
+  min-height: 100vh;
+  color: var(--text);
+}
+
+.container {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 48px 20px;
+}
+
+h1 {
+  color: #fff;
+  font-size: 28px;
+  margin-bottom: 4px;
+  text-align: center;
+}
+
+.event-details {
+  color: #cfcfcf;
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.status-box, .order-form {
+  background: var(--card);
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+}
+
+.status-box {
+  text-align: center;
+  margin-bottom: 20px;
+  font-weight: 600;
+}
+
+.price {
+  font-size: 32px;
+  color: var(--accent);
+  margin: 8px 0;
+}
+
+.order-form label {
+  display: block;
+  margin-bottom: 14px;
+  font-size: 14px;
+  color: #444;
+}
+
+.order-form input {
+  width: 100%;
+  padding: 10px 12px;
+  margin-top: 6px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  font-size: 15px;
+}
+
+.order-form button {
+  width: 100%;
+  padding: 12px;
+  border: none;
+  border-radius: 8px;
+  background: var(--accent);
+  color: #1a1a1a;
+  font-weight: 700;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.order-form button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.error {
+  color: #b3261e;
+  font-size: 14px;
+  margin-top: 10px;
+}
+
+a {
+  color: var(--accent);
+}
+
+/* Scanner pagina */
+.scan-wrap {
+  max-width: 420px;
+  margin: 0 auto;
+  padding: 24px 16px;
+  text-align: center;
+  color: #fff;
+}
+
+#reader {
+  border-radius: 16px;
+  overflow: hidden;
+  margin-top: 16px;
+}
+
+.result-banner {
+  margin-top: 16px;
+  padding: 16px;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 18px;
+}
+
+.result-valid { background: #1e7d32; color: #fff; }
+.result-invalid { background: #b3261e; color: #fff; }
+
+/* Admin pagina */
+.admin-wrap { max-width: 900px; }
+
+.secondary-btn {
+  margin-bottom: 16px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  background: #fff;
+  cursor: pointer;
+}
+
+.orders-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+  border-radius: 12px;
+  overflow: hidden;
+  font-size: 14px;
+}
+
+.orders-table th, .orders-table td {
+  padding: 10px 12px;
+  text-align: left;
+  border-bottom: 1px solid #eee;
+}
+
+.approve-btn, .reject-btn {
+  padding: 6px 10px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  margin-right: 6px;
+  font-weight: 600;
+}
+
+.approve-btn { background: #1e7d32; color: #fff; }
+.reject-btn { background: #b3261e; color: #fff; }
+
+/* Betaalinstructies op de aankooppagina */
+.payment-instructions {
+  background: #fff;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+}
+
+.payment-instructions dt { font-weight: 600; margin-top: 10px; }
+.payment-instructions dd { margin: 0; font-size: 16px; }
+.payment-instructions .reference { font-size: 22px; letter-spacing: 1px; color: var(--accent); }

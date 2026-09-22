@@ -1,0 +1,21 @@
+{
+  "name": "fourseasons-tickets",
+  "version": "1.0.0",
+  "description": "Ticketverkoop website met iDEAL betaling en unieke QR-codes per e-mail voor het feest bij Four Seasons.",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "nodemon server/index.js"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "qrcode": "^1.5.3",
+    "resend": "^3.4.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.4"
+  }
+}

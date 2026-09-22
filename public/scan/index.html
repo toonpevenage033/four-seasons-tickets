@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Scanner — Four Seasons Feest</title>
+  <link rel="stylesheet" href="../css/style.css" />
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+</head>
+<body>
+  <main class="scan-wrap">
+    <h1>Ticket scanner</h1>
+    <p>Voer eenmalig de staff-toegangscode in en scan daarna de QR-code van de bezoeker.</p>
+
+    <form id="token-form" class="order-form">
+      <label>
+        Staff-toegangscode
+        <input type="password" name="token" required />
+      </label>
+      <button type="submit">Start scanner</button>
+    </form>
+
+    <div id="reader" hidden></div>
+    <div id="result" class="result-banner" hidden></div>
+  </main>
+
+  <script src="scan.js"></script>
+</body>
+</html>
