@@ -42,7 +42,8 @@
 
     <div id="payment-instructions" class="payment-instructions" hidden>
       <h2>Bijna klaar!</h2>
-      <p>Maak het bedrag hieronder over. Zodra we je betaling zien, ontvang je je ticket(s) met QR-code per e-mail (kan enige tijd duren, wij bevestigen dit handmatig).</p>
+      <div class="payment-warning"><strong>Belangrijk:</strong> dit is alleen de betaal-QR, nog niet de QR-code voor toegang. Je echte ticket-QR ontvang je pas nadat wij je betaling hebben gecontroleerd en bevestigd.</div>
+      <p>Scan de betaal-QR met je bankapp. Controleer vóór het betalen of het bedrag, de IBAN en vooral de referentiecode zichtbaar zijn. Zodra we je betaling zien, ontvang je je ticket(s) met een aparte toegang-QR per e-mail.</p>
       <dl>
         <dt>Bedrag</dt>
         <dd id="pi-amount"></dd>
@@ -55,7 +56,7 @@
       </dl>
       <p><strong>Of scan deze betaal-QR met je bankapp:</strong></p>
       <img id="pi-payment-qr" class="payment-qr" alt="Betaal-QR-code" hidden />
-      <p><strong>Let op:</strong> zonder de juiste omschrijving kunnen we je betaling niet koppelen aan je bestelling.</p>
+      <p><strong>Let op:</strong> zie je de referentiecode niet in je bankapp? Vul hem dan handmatig in vóór je betaalt. Zonder de juiste referentie kunnen we je betaling niet koppelen aan je bestelling.</p>
     </div>
   </main>
 
