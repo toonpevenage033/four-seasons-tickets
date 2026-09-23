@@ -23,6 +23,15 @@ async function loadOrders() {
   renderOrders(data.orders);
 }
 
+async function checkToken(token) {
+  try {
+    const res = await fetch("/api/admin/ping", { headers: { "X-Admin-Token": token } });
+    return res.ok;
+  } catch (err) {
+    return false;
+  }
+}
+
 function renderOrders(orders) {
   ordersBody.innerHTML = "";
   for (const order of orders) {
@@ -83,19 +92,40 @@ async function updateOrder(orderId, action) {
   loadOrders();
 }
 
-tokenForm.addEventListener("submit", (e) => {
+tokenForm.addEventListener("submit", async (e) => {
   e.preventDefault();
-  adminToken = tokenForm.token.value;
+  const tokenError = document.getElementById("token-error");
+  const submitBtn = tokenForm.querySelector("button");
+  submitBtn.disabled = true;
+  tokenError.hidden = true;
+
+  const candidate = tokenForm.token.value;
+  if (!await checkToken(candidate)) {
+    tokenError.hidden = false;
+    submitBtn.disabled = false;
+    return;
+  }
+
+  adminToken = candidate;
   sessionStorage.setItem("adminToken", adminToken);
   tokenForm.hidden = true;
   app.hidden = false;
+  submitBtn.disabled = false;
   loadOrders();
 });
 
-refreshBtn?.addEventListener("click", loadOrders);
+async function restoreSession() {
+  if (!adminToken || !await checkToken(adminToken)) {
+    sessionStorage.removeItem("adminToken");
+    adminToken = "";
+    return;
+  }
 
-if (adminToken) {
   tokenForm.hidden = true;
   app.hidden = false;
   loadOrders();
 }
+
+refreshBtn?.addEventListener("click", loadOrders);
+
+restoreSession();

@@ -71,6 +71,14 @@ function requireAdmin(req, res, next) {
   next();
 }
 
+function requireStaff(req, res, next) {
+  const token = req.headers["x-staff-token"];
+  if (!process.env.STAFF_TOKEN || token !== process.env.STAFF_TOKEN) {
+    return res.status(401).json({ valid: false, message: "Ongeldige staff-toegangscode." });
+  }
+  next();
+}
+
 app.get("/api/status", (req, res) => {
   const data = read();
   const now = new Date();
@@ -182,6 +190,10 @@ app.get("/api/admin/orders", adminLimiter, requireAdmin, (req, res) => {
   res.json({ orders });
 });
 
+// Lichte check om direct te valideren of een toegangscode klopt, zonder verdere gevolgen.
+app.get("/api/admin/ping", adminLimiter, requireAdmin, (req, res) => res.json({ ok: true }));
+app.get("/api/staff/ping", verifyLimiter, requireStaff, (req, res) => res.json({ ok: true }));
+
 // Admin: bevestig dat de overschrijving binnen is -> genereert tickets + mailt QR-codes.
 app.post("/api/admin/orders/:id/approve", adminLimiter, requireAdmin, async (req, res) => {
   const result = await transact(async (data) => {
@@ -277,12 +289,7 @@ app.post("/api/admin/orders/:id/reject", adminLimiter, requireAdmin, async (req,
 });
 
 // Staff-only endpoint om tickets te scannen bij de ingang.
-app.post("/api/verify", verifyLimiter, async (req, res) => {
-  const token = req.headers["x-staff-token"];
-  if (!process.env.STAFF_TOKEN || token !== process.env.STAFF_TOKEN) {
-    return res.status(401).json({ valid: false, message: "Ongeldige staff-toegangscode." });
-  }
-
+app.post("/api/verify", verifyLimiter, requireStaff, async (req, res) => {
   const { code } = req.body;
   if (!code) return res.status(400).json({ valid: false, message: "Geen code ontvangen." });
 

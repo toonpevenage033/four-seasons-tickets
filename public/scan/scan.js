@@ -52,15 +52,44 @@ nextBtn.addEventListener("click", () => {
   awaitingNext = false;
 });
 
-tokenForm.addEventListener("submit", (e) => {
+async function checkToken(token) {
+  try {
+    const res = await fetch("/api/staff/ping", { headers: { "X-Staff-Token": token } });
+    return res.ok;
+  } catch (err) {
+    return false;
+  }
+}
+
+tokenForm.addEventListener("submit", async (e) => {
   e.preventDefault();
-  staffToken = tokenForm.token.value;
+  const tokenError = document.getElementById("token-error");
+  const submitBtn = tokenForm.querySelector("button");
+  submitBtn.disabled = true;
+
+  const candidate = tokenForm.token.value;
+  const ok = await checkToken(candidate);
+
+  if (!ok) {
+    tokenError.hidden = false;
+    submitBtn.disabled = false;
+    return;
+  }
+
+  staffToken = candidate;
   sessionStorage.setItem("staffToken", staffToken);
   tokenForm.hidden = true;
   startScanner();
 });
 
 if (staffToken) {
-  tokenForm.hidden = true;
-  startScanner();
+  checkToken(staffToken).then((ok) => {
+    if (ok) {
+      tokenForm.hidden = true;
+      startScanner();
+    } else {
+      sessionStorage.removeItem("staffToken");
+      staffToken = "";
+    }
+  });
 }
