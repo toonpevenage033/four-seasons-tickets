@@ -103,6 +103,28 @@ h1 {
   font-weight: 600;
 }
 
+.info-box {
+  background: rgba(255, 255, 255, 0.94);
+  border-radius: 16px;
+  padding: 20px 24px;
+  margin-bottom: 20px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+}
+
+.info-box h2 {
+  margin-top: 0;
+  font-size: 20px;
+}
+
+.info-box li {
+  margin: 8px 0;
+}
+
+.info-box p {
+  margin-bottom: 0;
+  color: #5a4300;
+}
+
 .price {
   font-size: 32px;
   color: var(--accent);
