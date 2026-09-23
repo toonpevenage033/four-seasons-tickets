@@ -53,7 +53,7 @@ async function sendTicketsEmail({ to, name, tier, tickets, orderId }) {
   return result;
 }
 
-async function sendPaymentInstructionsEmail({ to, name, tier, quantity, reference, amountFormatted, iban, accountHolder }) {
+async function sendPaymentInstructionsEmail({ to, name, tier, quantity, reference, amountFormatted, iban, accountHolder, paymentQrDataUrl }) {
   const client = getResend();
 
   const html = `
@@ -67,6 +67,8 @@ async function sendPaymentInstructionsEmail({ to, name, tier, quantity, referenc
         <p style="margin:0 0 8px;"><strong>T.n.v.:</strong> ${accountHolder}</p>
         <p style="margin:0;"><strong>Omschrijving (verplicht!):</strong> ${reference}</p>
       </div>
+      <p><strong>Of scan deze betaal-QR met je bankapp:</strong></p>
+      <p><img src="${paymentQrDataUrl}" alt="Betaal-QR-code" width="240" height="240" /></p>
       <p style="font-size:13px;color:#888;">Vermeld altijd de omschrijving hierboven, anders kunnen we je betaling niet koppelen aan je bestelling. Reserveringen zonder betaling binnen ${require("./pricing").PENDING_ORDER_TTL_HOURS} uur vervallen automatisch.</p>
     </div>
   `;

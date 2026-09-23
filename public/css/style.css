@@ -251,3 +251,12 @@ a {
 .payment-instructions dt { font-weight: 600; margin-top: 10px; }
 .payment-instructions dd { margin: 0; font-size: 16px; }
 .payment-instructions .reference { font-size: 22px; letter-spacing: 1px; color: var(--accent); }
+
+.payment-qr {
+  display: block;
+  width: 240px;
+  height: 240px;
+  margin: 12px auto 18px;
+  border-radius: 8px;
+  background: #fff;
+}

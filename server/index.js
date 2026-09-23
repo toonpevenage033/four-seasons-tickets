@@ -8,6 +8,7 @@ const crypto = require("crypto");
 
 const { transact, read } = require("./db");
 const { generateQrDataUrl } = require("./qr");
+const { generatePaymentQrDataUrl } = require("./payment-qr");
 const { sendTicketsEmail, sendPaymentInstructionsEmail } = require("./email");
 const {
   MAX_TICKETS,
@@ -162,6 +163,12 @@ app.post("/api/orders", orderLimiter, async (req, res) => {
       iban: process.env.PAYMENT_IBAN,
       accountHolder: process.env.PAYMENT_ACCOUNT_HOLDER,
     };
+    paymentInfo.paymentQrDataUrl = await generatePaymentQrDataUrl({
+      iban: paymentInfo.iban,
+      accountHolder: paymentInfo.accountHolder,
+      amountCents,
+      reference: paymentInfo.reference,
+    });
 
     // De betaalinfo staat sowieso al op het scherm; een mislukte mail mag de bestelling niet blokkeren.
     try {

@@ -96,6 +96,9 @@ form.addEventListener("submit", async (e) => {
     document.getElementById("pi-iban").textContent = data.iban;
     document.getElementById("pi-holder").textContent = data.accountHolder;
     document.getElementById("pi-reference").textContent = data.reference;
+    const paymentQr = document.getElementById("pi-payment-qr");
+    paymentQr.src = data.paymentQrDataUrl;
+    paymentQr.hidden = false;
 
     form.hidden = true;
     paymentInstructions.hidden = false;
