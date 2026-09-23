@@ -274,6 +274,30 @@ app.post("/api/admin/orders/:id/resend-email", adminLimiter, requireAdmin, async
   }
 });
 
+// Admin: annuleer een betaalde bestelling en maak de tickets ongeldig.
+app.post("/api/admin/orders/:id/cancel", adminLimiter, requireAdmin, async (req, res) => {
+  const result = await transact(async (data) => {
+    const order = data.orders.find((o) => o.id === req.params.id);
+    if (!order) return { error: "Bestelling niet gevonden." };
+    if (order.status === "cancelled" || order.status === "rejected") {
+      return { error: "Bestelling is al geannuleerd." };
+    }
+
+    const tickets = data.tickets.filter((ticket) => ticket.orderId === order.id);
+    if (tickets.some((ticket) => ticket.status === "used")) {
+      return { error: "Deze bestelling kan niet meer worden geannuleerd: een ticket is al gescand." };
+    }
+
+    order.status = order.status === "paid" ? "cancelled" : "rejected";
+    order.cancelledAt = new Date().toISOString();
+    for (const ticket of tickets) ticket.status = "cancelled";
+    return { ok: true };
+  });
+
+  if (result.error) return res.status(409).json({ error: result.error });
+  res.json({ ok: true });
+});
+
 // Admin: wijs een bestelling af (bv. geen betaling ontvangen) zodat de plekken vrijkomen.
 app.post("/api/admin/orders/:id/reject", adminLimiter, requireAdmin, async (req, res) => {
   const result = await transact(async (data) => {

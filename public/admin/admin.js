@@ -70,6 +70,16 @@ function renderOrders(orders) {
       resendBtn.className = "approve-btn";
       resendBtn.onclick = () => updateOrder(order.id, "resend-email");
       actionCell.append(resendBtn);
+
+      const cancelBtn = document.createElement("button");
+      cancelBtn.textContent = "Annuleer / geen toegang";
+      cancelBtn.className = "reject-btn";
+      cancelBtn.onclick = () => {
+        if (confirm("Weet je zeker dat deze bestelling geen toegang meer mag geven? De QR-code wordt ongeldig.")) {
+          updateOrder(order.id, "cancel");
+        }
+      };
+      actionCell.append(cancelBtn);
     }
 
     ordersBody.appendChild(tr);
