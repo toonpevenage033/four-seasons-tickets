@@ -2,11 +2,18 @@ const tokenForm = document.getElementById("token-form");
 const app = document.getElementById("app");
 const ordersBody = document.getElementById("orders-body");
 const refreshBtn = document.getElementById("refresh-btn");
+const adminNotice = document.getElementById("admin-notice");
 
 let adminToken = sessionStorage.getItem("adminToken") || "";
 
 function formatCents(cents) {
   return (cents / 100).toFixed(2).replace(".", ",");
+}
+
+function showNotice(message, type = "success") {
+  adminNotice.textContent = message;
+  adminNotice.className = `admin-notice admin-notice-${type}`;
+  adminNotice.hidden = false;
 }
 
 async function loadOrders() {
@@ -54,12 +61,12 @@ function renderOrders(orders) {
       const approveBtn = document.createElement("button");
       approveBtn.textContent = "Bevestig betaling";
       approveBtn.className = "approve-btn";
-      approveBtn.onclick = () => updateOrder(order.id, "approve");
+      approveBtn.onclick = () => updateOrder(order.id, "approve", approveBtn, "Bevestigen...");
 
       const rejectBtn = document.createElement("button");
       rejectBtn.textContent = "Afwijzen";
       rejectBtn.className = "reject-btn";
-      rejectBtn.onclick = () => updateOrder(order.id, "reject");
+      rejectBtn.onclick = () => updateOrder(order.id, "reject", rejectBtn, "Afwijzen...");
 
       actionCell.append(approveBtn, rejectBtn);
     }
@@ -68,7 +75,7 @@ function renderOrders(orders) {
       const resendBtn = document.createElement("button");
       resendBtn.textContent = "Mail opnieuw versturen";
       resendBtn.className = "approve-btn";
-      resendBtn.onclick = () => updateOrder(order.id, "resend-email");
+      resendBtn.onclick = () => updateOrder(order.id, "resend-email", resendBtn, "Versturen...");
       actionCell.append(resendBtn);
 
       const cancelBtn = document.createElement("button");
@@ -76,7 +83,7 @@ function renderOrders(orders) {
       cancelBtn.className = "reject-btn";
       cancelBtn.onclick = () => {
         if (confirm("Weet je zeker dat deze bestelling geen toegang meer mag geven? De QR-code wordt ongeldig.")) {
-          updateOrder(order.id, "cancel");
+          updateOrder(order.id, "cancel", cancelBtn, "Annuleren...");
         }
       };
       actionCell.append(cancelBtn);
@@ -86,18 +93,34 @@ function renderOrders(orders) {
   }
 }
 
-async function updateOrder(orderId, action) {
+async function updateOrder(orderId, action, button, busyText) {
+  const originalText = button.textContent;
+  button.disabled = true;
+  button.textContent = busyText;
+  showNotice("Actie wordt uitgevoerd...", "pending");
+
+  const actionNames = {
+    approve: "Betaling bevestigd.",
+    reject: "Bestelling afgewezen.",
+    "resend-email": "Ticketmail opnieuw verstuurd.",
+    cancel: "Bestelling geannuleerd; QR-code is ongeldig.",
+  };
+
   const res = await fetch(`/api/admin/orders/${orderId}/${action}`, {
     method: "POST",
     headers: { "X-Admin-Token": adminToken },
   });
   const data = await res.json();
   if (!res.ok) {
-    alert(data.error || "Er ging iets mis.");
+    showNotice(data.error || "Er ging iets mis.", "error");
+    button.disabled = false;
+    button.textContent = originalText;
     return;
   }
   if (data.emailError) {
-    alert(data.emailError);
+    showNotice(data.emailError, "error");
+  } else {
+    showNotice(actionNames[action] || "Actie uitgevoerd.");
   }
   loadOrders();
 }

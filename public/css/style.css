@@ -235,6 +235,22 @@ a {
   cursor: pointer;
 }
 
+.admin-notice {
+  padding: 12px 14px;
+  border-radius: 8px;
+  margin: 0 0 16px;
+  font-weight: 600;
+}
+
+.admin-notice-pending { background: #fff3cd; color: #5a4300; }
+.admin-notice-success { background: #d9f2df; color: #145c25; }
+.admin-notice-error { background: #f8d7da; color: #842029; }
+
+.approve-btn:disabled, .reject-btn:disabled, .secondary-btn:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
 .orders-table {
   width: 100%;
   border-collapse: collapse;
