@@ -1,20 +1,24 @@
 const tokenForm = document.getElementById("token-form");
 const readerEl = document.getElementById("reader");
 const resultEl = document.getElementById("result");
+const nextBtn = document.getElementById("next-btn");
 
 let staffToken = sessionStorage.getItem("staffToken") || "";
 let scanner = null;
-let processing = false;
+let awaitingNext = false;
 
-function showResult(valid, message) {
+function showResult(valid, message, extra) {
   resultEl.hidden = false;
-  resultEl.textContent = message;
+  const details = extra ? `<div class="result-extra">${extra}</div>` : "";
+  resultEl.innerHTML = `<div class="result-main">${message}</div>${details}`;
   resultEl.className = "result-banner " + (valid ? "result-valid" : "result-invalid");
+  nextBtn.hidden = false;
+  awaitingNext = true;
 }
 
 async function onScanSuccess(code) {
-  if (processing) return;
-  processing = true;
+  if (awaitingNext) return; // pas weer scannen na klikken op "Volgende"
+  awaitingNext = true; // direct blokkeren, voorkomt dubbele scans tijdens het wachten op het antwoord
 
   try {
     const res = await fetch("/api/verify", {
@@ -23,12 +27,13 @@ async function onScanSuccess(code) {
       body: JSON.stringify({ code }),
     });
     const data = await res.json();
-    showResult(data.valid, data.message);
+    const extra = data.valid
+      ? [data.name, data.tier].filter(Boolean).join(" · ")
+      : "";
+    showResult(data.valid, data.message, extra);
   } catch (err) {
     showResult(false, "Kon niet verifiëren, controleer verbinding.");
   }
-
-  setTimeout(() => { processing = false; }, 1500);
 }
 
 function startScanner() {
@@ -40,6 +45,12 @@ function startScanner() {
     (decodedText) => onScanSuccess(decodedText)
   );
 }
+
+nextBtn.addEventListener("click", () => {
+  resultEl.hidden = true;
+  nextBtn.hidden = true;
+  awaitingNext = false;
+});
 
 tokenForm.addEventListener("submit", (e) => {
   e.preventDefault();

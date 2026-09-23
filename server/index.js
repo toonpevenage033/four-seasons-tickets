@@ -1,6 +1,8 @@
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
+const helmet = require("helmet");
+const rateLimit = require("express-rate-limit");
 const path = require("path");
 const crypto = require("crypto");
 
@@ -18,9 +20,20 @@ const {
 } = require("./pricing");
 
 const app = express();
+app.set("trust proxy", 1); // nodig achter Render's reverse proxy, anders werkt rate-limiting per IP niet goed
+app.use(helmet({ contentSecurityPolicy: false })); // CSP uit: blokkeert anders de inline scripts/CDN-libs die de pagina's gebruiken
 app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "..", "public")));
+
+// Algemene rem op alle API-verkeer per IP, tegen simpele flood/DoS-pogingen.
+const generalLimiter = rateLimit({ windowMs: 60 * 1000, max: 100, standardHeaders: true, legacyHeaders: false });
+app.use("/api", generalLimiter);
+
+// Striktere limieten op de gevoeligste endpoints.
+const orderLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 10, message: { error: "Te veel pogingen, probeer het later opnieuw." } });
+const verifyLimiter = rateLimit({ windowMs: 60 * 1000, max: 60, message: { valid: false, message: "Te veel scans, even wachten." } });
+const adminLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 30, message: { error: "Te veel pogingen, probeer het later opnieuw." } });
 
 function generateTicketCode() {
   // Niet te raden, want gebruikt bij de deur om fraude te voorkomen.
@@ -86,7 +99,7 @@ app.get("/api/status", (req, res) => {
   });
 });
 
-app.post("/api/orders", async (req, res) => {
+app.post("/api/orders", orderLimiter, async (req, res) => {
   try {
     const { name, email, quantity } = req.body;
     const qty = Number(quantity);
@@ -163,14 +176,14 @@ app.post("/api/orders", async (req, res) => {
 });
 
 // Admin: overzicht van bestellingen die wachten op handmatige betaalbevestiging.
-app.get("/api/admin/orders", requireAdmin, (req, res) => {
+app.get("/api/admin/orders", adminLimiter, requireAdmin, (req, res) => {
   const data = read();
   const orders = [...data.orders].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
   res.json({ orders });
 });
 
 // Admin: bevestig dat de overschrijving binnen is -> genereert tickets + mailt QR-codes.
-app.post("/api/admin/orders/:id/approve", requireAdmin, async (req, res) => {
+app.post("/api/admin/orders/:id/approve", adminLimiter, requireAdmin, async (req, res) => {
   const result = await transact(async (data) => {
     const order = data.orders.find((o) => o.id === req.params.id);
     if (!order) return { error: "Bestelling niet gevonden." };
@@ -221,7 +234,7 @@ app.post("/api/admin/orders/:id/approve", requireAdmin, async (req, res) => {
 });
 
 // Admin: stuur de ticket-e-mail nogmaals (bv. na een eerdere mislukte poging).
-app.post("/api/admin/orders/:id/resend-email", requireAdmin, async (req, res) => {
+app.post("/api/admin/orders/:id/resend-email", adminLimiter, requireAdmin, async (req, res) => {
   const data = read();
   const order = data.orders.find((o) => o.id === req.params.id);
   if (!order) return res.status(404).json({ error: "Bestelling niet gevonden." });
@@ -250,7 +263,7 @@ app.post("/api/admin/orders/:id/resend-email", requireAdmin, async (req, res) =>
 });
 
 // Admin: wijs een bestelling af (bv. geen betaling ontvangen) zodat de plekken vrijkomen.
-app.post("/api/admin/orders/:id/reject", requireAdmin, async (req, res) => {
+app.post("/api/admin/orders/:id/reject", adminLimiter, requireAdmin, async (req, res) => {
   const result = await transact(async (data) => {
     const order = data.orders.find((o) => o.id === req.params.id);
     if (!order) return { error: "Bestelling niet gevonden." };
@@ -264,7 +277,7 @@ app.post("/api/admin/orders/:id/reject", requireAdmin, async (req, res) => {
 });
 
 // Staff-only endpoint om tickets te scannen bij de ingang.
-app.post("/api/verify", async (req, res) => {
+app.post("/api/verify", verifyLimiter, async (req, res) => {
   const token = req.headers["x-staff-token"];
   if (!process.env.STAFF_TOKEN || token !== process.env.STAFF_TOKEN) {
     return res.status(401).json({ valid: false, message: "Ongeldige staff-toegangscode." });
@@ -277,14 +290,21 @@ app.post("/api/verify", async (req, res) => {
     const ticket = data.tickets.find((t) => t.code === code.trim());
     if (!ticket) return { valid: false, message: "Onbekend ticket." };
     if (ticket.status === "used") {
-      return { valid: false, message: `Al gescand op ${ticket.usedAt}.` };
+      return { valid: false, message: `Al gescand op ${new Date(ticket.usedAt).toLocaleTimeString("nl-NL")}.` };
     }
     if (ticket.status !== "paid") {
       return { valid: false, message: "Ticket is niet betaald." };
     }
     ticket.status = "used";
     ticket.usedAt = new Date().toISOString();
-    return { valid: true, message: "Toegang verleend." };
+    const order = data.orders.find((o) => o.id === ticket.orderId);
+    const tierMeta = require("./pricing").TIERS.find((t) => t.id === ticket.tierId);
+    return {
+      valid: true,
+      message: "Toegang verleend.",
+      name: order ? order.name : null,
+      tier: tierMeta ? tierMeta.label : null,
+    };
   });
 
   res.json(result);
