@@ -9,7 +9,7 @@ const crypto = require("crypto");
 const { transact, read } = require("./db");
 const { generateQrDataUrl } = require("./qr");
 const { generatePaymentQrDataUrl } = require("./payment-qr");
-const { sendTicketsEmail, sendPaymentInstructionsEmail } = require("./email");
+const { sendTicketsEmail, sendPaymentInstructionsEmail, sendPaymentReminderEmail } = require("./email");
 const {
   MAX_TICKETS,
   EARLY_BIRD_CAP,
@@ -290,9 +290,6 @@ app.post("/api/admin/orders/:id/approve", adminLimiter, requireAdmin, async (req
   if (result.error) return res.status(409).json({ error: result.error });
 
   const tierMeta = require("./pricing").TIERS.find((t) => t.id === result.order.tierId);
-  const ticketsWithQr = await Promise.all(
-    result.tickets.map(async (t) => ({ ...t, qrDataUrl: await generateQrDataUrl(t.code) }))
-  );
 
   // Ticket(s) zijn al aangemaakt; een mislukte mail mag dat niet ongedaan maken.
   let emailError = null;
@@ -301,7 +298,7 @@ app.post("/api/admin/orders/:id/approve", adminLimiter, requireAdmin, async (req
       to: result.order.email,
       name: result.order.name,
       tier: tierMeta,
-      tickets: ticketsWithQr,
+      tickets: result.tickets,
       orderId: result.order.id,
     });
   } catch (err) {
@@ -324,20 +321,46 @@ app.post("/api/admin/orders/:id/resend-email", adminLimiter, requireAdmin, async
 
   const tierMeta = require("./pricing").TIERS.find((t) => t.id === order.tierId);
   try {
-    const ticketsWithQr = await Promise.all(
-      tickets.map(async (t) => ({ ...t, qrDataUrl: await generateQrDataUrl(t.code) }))
-    );
     await sendTicketsEmail({
       to: order.email,
       name: order.name,
       tier: tierMeta,
-      tickets: ticketsWithQr,
+      tickets,
       orderId: order.id,
     });
     res.json({ ok: true });
   } catch (err) {
     console.error("Fout bij opnieuw versturen ticket-e-mail:", err);
     res.status(502).json({ error: "Versturen mislukte opnieuw: " + err.message });
+  }
+});
+
+// Admin: stuur een betalingsherinnering naar iemand die nog niet betaald heeft.
+app.post("/api/admin/orders/:id/remind", adminLimiter, requireAdmin, async (req, res) => {
+  const data = read();
+  const order = data.orders.find((o) => o.id === req.params.id);
+  if (!order) return res.status(404).json({ error: "Bestelling niet gevonden." });
+  if (order.status !== "awaiting_payment") {
+    return res.status(409).json({ error: "Deze bestelling wacht niet (meer) op betaling." });
+  }
+
+  const tierMeta = require("./pricing").TIERS.find((t) => t.id === order.tierId);
+  try {
+    await sendPaymentReminderEmail({
+      to: order.email,
+      name: order.name,
+      tier: tierMeta,
+      quantity: order.quantity,
+      reference: order.reference,
+      amountFormatted: formatPrice(order.amountCents),
+      amountCents: order.amountCents,
+      iban: process.env.PAYMENT_IBAN,
+      accountHolder: process.env.PAYMENT_ACCOUNT_HOLDER,
+    });
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("Fout bij versturen betalingsherinnering:", err);
+    res.status(502).json({ error: "Versturen mislukte: " + err.message });
   }
 });
 

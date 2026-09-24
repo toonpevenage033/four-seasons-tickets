@@ -144,4 +144,44 @@ async function sendPaymentInstructionsEmail({ to, name, tier, quantity, referenc
   return result;
 }
 
-module.exports = { sendTicketsEmail, sendPaymentInstructionsEmail };
+async function sendPaymentReminderEmail({ to, name, tier, quantity, reference, amountFormatted, amountCents, iban, accountHolder }) {
+  const paymentQrBuffer = await generatePaymentQrBuffer({ iban, accountHolder, amountCents, reference });
+
+  const html = `
+    <div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto;color:#222;">
+      <h1 style="font-size:22px;">Herinnering: je betaling staat nog open ⏰</h1>
+      <p>Hoi ${name || ""},</p>
+      <p>We hebben nog geen betaling van je ontvangen voor je reservering van ${quantity} ticket${quantity > 1 ? "s" : ""} (${tier.label}) voor ${EVENT.name}. Wil je het bedrag hieronder alsnog overmaken? Zodra we je betaling zien, ontvang je je ticket(s) met QR-code.</p>
+      <div style="border:1px solid #e2e2e2;border-radius:12px;padding:20px;margin:16px 0;">
+        <p style="margin:0 0 8px;"><strong>Bedrag:</strong> € ${amountFormatted}</p>
+        <p style="margin:0 0 8px;"><strong>IBAN:</strong> ${iban}</p>
+        <p style="margin:0 0 8px;"><strong>T.n.v.:</strong> ${accountHolder}</p>
+        <p style="margin:0;"><strong>Omschrijving (verplicht!):</strong> ${reference}</p>
+      </div>
+      <div style="background:#fff3cd;border:1px solid #e0b84c;border-radius:10px;padding:14px;margin:16px 0;">
+        <strong>Let op:</strong> zet de code <span style="font-family:monospace;">${reference}</span> écht in de <strong>omschrijving</strong> van je overschrijving. Zonder deze code kunnen we je betaling niet aan je bestelling koppelen en krijg je geen ticket.
+      </div>
+      <p><strong>Scan deze betaal-QR met je bankapp:</strong></p>
+      <p><img src="cid:payment-qr-${reference}" alt="Betaal-QR-code" width="240" height="240" /></p>
+      <p style="font-size:13px;color:#888;">Nog geen tickets meer beschikbaar bij dit tarief? Dan kan je bestelling helaas vervallen. Betaal daarom op tijd.</p>
+    </div>
+  `;
+
+  const result = await sendWithRetry({
+    from: process.env.EMAIL_FROM,
+    to,
+    subject: `Herinnering: rond je betaling af voor ${EVENT.name} — ref. ${reference}`,
+    html,
+    attachments: [
+      {
+        filename: "betaal-qr.png",
+        content: paymentQrBuffer.toString("base64"),
+        contentId: `payment-qr-${reference}`,
+        contentType: "image/png",
+      },
+    ],
+  });
+  return result;
+}
+
+module.exports = { sendTicketsEmail, sendPaymentInstructionsEmail, sendPaymentReminderEmail };

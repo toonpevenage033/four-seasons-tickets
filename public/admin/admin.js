@@ -80,7 +80,12 @@ function renderOrders(orders) {
       rejectBtn.className = "reject-btn";
       rejectBtn.onclick = () => updateOrder(order.id, "reject", rejectBtn, "Afwijzen...");
 
-      actionCell.append(approveBtn, rejectBtn);
+      const remindBtn = document.createElement("button");
+      remindBtn.textContent = "Stuur betalingsherinnering";
+      remindBtn.className = "secondary-btn";
+      remindBtn.onclick = () => updateOrder(order.id, "remind", remindBtn, "Versturen...");
+
+      actionCell.append(approveBtn, rejectBtn, remindBtn);
     }
 
     if (order.status === "paid") {
@@ -126,6 +131,7 @@ async function updateOrder(orderId, action, button, busyText) {
     reject: "Bestelling afgewezen.",
     "resend-email": "Ticketmail opnieuw verstuurd.",
     cancel: "Bestelling geannuleerd; QR-code is ongeldig.",
+    remind: "Betalingsherinnering verstuurd.",
   };
 
   const res = await fetch(`/api/admin/orders/${orderId}/${action}`, {
