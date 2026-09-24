@@ -28,15 +28,34 @@
       <div class="ticket-counter-number"><span id="tc-remaining">0</span></div>
     </div>
 
-    <section class="info-box">
-      <h2>Zo werkt het</h2>
-      <ol>
-        <li>Reserveer je ticket en ontvang een unieke referentiecode.</li>
-        <li>Betaal met de betaal-QR of via een bankoverschrijving.</li>
-        <li>Controleer vóór betalen of het bedrag en de referentiecode zichtbaar zijn.</li>
-        <li>Na controle van je betaling ontvang je per e-mail je echte toegangsticket met QR-code.</li>
-      </ol>
-      <p><strong>Let op:</strong> de betaal-QR is niet de QR-code voor toegang tot het feest.</p>
+    <section class="collapsible disclaimer-box">
+      <button type="button" class="collapsible-header disclaimer-header" data-target="disclaimer-content">
+        <span class="collapsible-arrow">›</span> Belangrijke voorwaarden — lees dit voor je bestelt!
+      </button>
+      <div id="disclaimer-content" class="collapsible-content" hidden>
+        <ul>
+          <li><strong>Minimumleeftijd 15 jaar.</strong> Ben je jonger, dan kom je niet binnen.</li>
+          <li><strong>ID-controle bij de deur.</strong> Neem een geldig identiteitsbewijs mee. Kun je je niet legitimeren of ben je niet oud genoeg? Dan word je geweigerd, zonder restitutie.</li>
+          <li><strong>Verkleedplicht.</strong> Je moet verkleed komen (Halloween-thema). Kom je niet verkleed, dan word je bij de ingang geweigerd, zonder restitutie.</li>
+          <li><strong>Geen restitutie.</strong> Er wordt in geen enkel geval geld terugbetaald, ook niet bij weigering aan de deur.</li>
+          <li><strong>Juiste betaalbedrag verplicht.</strong> Maak exact het bedrag over dat in de betaalinstructie-e-mail staat. Maak je een afwijkend bedrag over, dan krijg je geen ticket en geen restitutie.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="collapsible info-box">
+      <button type="button" class="collapsible-header" data-target="howitworks-content">
+        <span class="collapsible-arrow">›</span> Zo werkt het
+      </button>
+      <div id="howitworks-content" class="collapsible-content" hidden>
+        <ol>
+          <li>Reserveer je ticket en ontvang een unieke referentiecode.</li>
+          <li>Betaal met de betaal-QR of via een bankoverschrijving.</li>
+          <li>Controleer vóór betalen of het bedrag en de referentiecode zichtbaar zijn.</li>
+          <li>Na controle van je betaling ontvang je per e-mail je echte toegangsticket met QR-code.</li>
+        </ol>
+        <p><strong>Let op:</strong> de betaal-QR is niet de QR-code voor toegang tot het feest.</p>
+      </div>
     </section>
 
     <form id="order-form" class="order-form" hidden>
@@ -51,6 +70,10 @@
       <label>
         Aantal tickets
         <input type="number" name="quantity" min="1" max="6" value="1" required />
+      </label>
+      <label class="checkbox-label">
+        <input type="checkbox" name="disclaimerAccepted" required />
+        Ik heb de voorwaarden hierboven gelezen en ga hiermee akkoord
       </label>
       <button type="submit">Reserveer tickets</button>
       <p id="form-error" class="error" hidden></p>

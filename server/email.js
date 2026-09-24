@@ -39,6 +39,15 @@ async function sendTicketsEmail({ to, name, tier, tickets, orderId }) {
         <li><strong>Bestelnummer:</strong> ${orderId}</li>
       </ul>
       ${ticketsHtml}
+      <div style="background:#fdeaea;border:2px solid #b3261e;border-radius:10px;padding:16px;margin:16px 0;color:#7a1913;">
+        <strong>Belangrijke voorwaarden:</strong>
+        <ul style="padding-left:18px;margin:8px 0 0;">
+          <li>Minimumleeftijd 15 jaar. Jonger? Dan kom je niet binnen.</li>
+          <li>Neem een geldig ID mee, dit wordt bij de deur gecontroleerd.</li>
+          <li><strong>Verkleedplicht</strong> (Halloween-thema) — kom je niet verkleed, dan word je geweigerd.</li>
+          <li>Geen restitutie, ook niet bij weigering aan de deur.</li>
+        </ul>
+      </div>
       <p style="font-size:13px;color:#888;">Elke QR-code is uniek en kan maar één keer gescand worden bij de ingang. Bewaar deze e-mail goed.</p>
     </div>
   `;
@@ -75,6 +84,17 @@ async function sendPaymentInstructionsEmail({ to, name, tier, quantity, referenc
       <p><img src="${paymentQrDataUrl}" alt="Betaal-QR-code" width="240" height="240" /></p>
       <p><strong>Controleer vóór het betalen:</strong> het bedrag, IBAN en vooral referentiecode <span style="font-family:monospace;">${reference}</span> moeten zichtbaar zijn in je bankapp.</p>
       <p style="font-size:13px;color:#888;">Vermeld altijd de omschrijving hierboven, anders kunnen we je betaling niet koppelen aan je bestelling. Reserveringen zonder betaling binnen ${require("./pricing").PENDING_ORDER_TTL_HOURS} uur vervallen automatisch.</p>
+      <div style="background:#fdeaea;border:2px solid #b3261e;border-radius:10px;padding:16px;margin:16px 0;color:#7a1913;">
+        <strong>Belangrijke voorwaarden:</strong>
+        <ul style="padding-left:18px;margin:8px 0 0;">
+          <li>Maak <strong>exact</strong> het bedrag hierboven over. Een afwijkend bedrag betekent geen ticket en geen restitutie.</li>
+          <li>Minimumleeftijd 15 jaar. Jonger? Dan kom je niet binnen.</li>
+          <li>Neem een geldig ID mee, dit wordt bij de deur gecontroleerd.</li>
+          <li><strong>Verkleedplicht</strong> (Halloween-thema) — kom je niet verkleed, dan word je geweigerd.</li>
+          <li>Geen restitutie, in geen enkel geval.</li>
+        </ul>
+      </div>
+      <p style="font-size:13px;color:#888;"><strong>Locatie:</strong> ${EVENT.address}<br /><strong>Datum:</strong> 31 oktober, 21:00 - 02:00</p>
     </div>
   `;
 

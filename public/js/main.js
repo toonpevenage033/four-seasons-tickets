@@ -5,6 +5,15 @@ const paymentInstructions = document.getElementById("payment-instructions");
 const countdownBox = document.getElementById("countdown");
 const ticketCounter = document.getElementById("ticket-counter");
 
+document.querySelectorAll(".collapsible-header").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    const target = document.getElementById(btn.dataset.target);
+    const isOpen = !target.hidden;
+    target.hidden = isOpen;
+    btn.classList.toggle("open", !isOpen);
+  });
+});
+
 let countdownTimer = null;
 
 function stopCountdown() {
