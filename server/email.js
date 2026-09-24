@@ -12,6 +12,23 @@ function getResend() {
   return resend;
 }
 
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+// Bij drukte kan Resend even een rate-limit-fout teruggeven; dat lossen we vanzelf op met een paar herpogingen.
+async function sendWithRetry(payload, attempts = 4) {
+  const client = getResend();
+  let lastError;
+  for (let i = 0; i < attempts; i++) {
+    const result = await client.emails.send(payload);
+    if (!result.error) return result;
+    lastError = result.error;
+    const isRateLimited = result.error.name === "rate_limit_exceeded" || result.error.statusCode === 429;
+    if (!isRateLimited || i === attempts - 1) break;
+    await sleep(500 * (i + 1));
+  }
+  throw new Error(lastError.message || "Resend gaf een fout terug.");
+}
+
 function ticketBlockHtml(ticket) {
   return `
     <div style="border:1px solid #e2e2e2;border-radius:12px;padding:20px;margin:16px 0;text-align:center;">
@@ -24,7 +41,6 @@ function ticketBlockHtml(ticket) {
 }
 
 async function sendTicketsEmail({ to, name, tier, tickets, orderId }) {
-  const client = getResend();
   const ticketsHtml = tickets.map(ticketBlockHtml).join("");
 
   const html = `
@@ -52,19 +68,16 @@ async function sendTicketsEmail({ to, name, tier, tickets, orderId }) {
     </div>
   `;
 
-  const result = await client.emails.send({
+  const result = await sendWithRetry({
     from: process.env.EMAIL_FROM,
     to,
     subject: `Je ${tickets.length > 1 ? "tickets" : "ticket"} voor ${EVENT.name}`,
     html,
   });
-  if (result.error) throw new Error(result.error.message || "Resend gaf een fout terug.");
   return result;
 }
 
 async function sendPaymentInstructionsEmail({ to, name, tier, quantity, reference, amountFormatted, iban, accountHolder, paymentQrDataUrl }) {
-  const client = getResend();
-
   const html = `
     <div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto;color:#222;">
       <h1 style="font-size:22px;">Bijna klaar — rond je betaling af 🎟️</h1>
@@ -98,13 +111,12 @@ async function sendPaymentInstructionsEmail({ to, name, tier, quantity, referenc
     </div>
   `;
 
-  const result = await client.emails.send({
+  const result = await sendWithRetry({
     from: process.env.EMAIL_FROM,
     to,
     subject: `Rond je betaling af voor ${EVENT.name} — ref. ${reference}`,
     html,
   });
-  if (result.error) throw new Error(result.error.message || "Resend gaf een fout terug.");
   return result;
 }
 

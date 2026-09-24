@@ -35,7 +35,7 @@ app.use("/api", generalLimiter);
 // Striktere limieten op de gevoeligste endpoints.
 const orderLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 10, message: { error: "Te veel pogingen, probeer het later opnieuw." } });
 const verifyLimiter = rateLimit({ windowMs: 60 * 1000, max: 60, message: { valid: false, message: "Te veel scans, even wachten." } });
-const adminLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 30, message: { error: "Te veel pogingen, probeer het later opnieuw." } });
+const adminLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 500, message: { error: "Te veel pogingen, probeer het later opnieuw." } });
 
 function generateTicketCode() {
   // Niet te raden, want gebruikt bij de deur om fraude te voorkomen.
