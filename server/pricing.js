@@ -20,13 +20,13 @@ const TIERS = [
     label: "Early Bird",
     priceCents: 1050,
     start: "2026-09-24T15:00:00",
-    end: "2026-10-01T00:00:00",
+    end: "2026-09-24T15:07:00",
   },
   {
     id: "regular",
     label: "Regular",
     priceCents: 1450,
-    start: "2026-10-01T00:00:00",
+    start: "2026-09-24T15:07:00",
     end: "2026-10-27T00:00:00",
   },
   {
