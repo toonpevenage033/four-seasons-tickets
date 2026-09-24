@@ -309,6 +309,24 @@ app.post("/api/admin/orders/:id/approve", adminLimiter, requireAdmin, async (req
   res.json({ ok: true, emailError });
 });
 
+// Admin: corrigeer een verkeerd ingevoerd e-mailadres (bv. typfout van de koper).
+app.post("/api/admin/orders/:id/email", adminLimiter, requireAdmin, async (req, res) => {
+  const { email } = req.body;
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return res.status(400).json({ error: "Geldig e-mailadres is verplicht." });
+  }
+
+  const result = await transact(async (data) => {
+    const order = data.orders.find((o) => o.id === req.params.id);
+    if (!order) return { error: "Bestelling niet gevonden." };
+    order.email = email.trim();
+    return { ok: true };
+  });
+
+  if (result.error) return res.status(404).json({ error: result.error });
+  res.json({ ok: true });
+});
+
 // Admin: stuur de ticket-e-mail nogmaals (bv. na een eerdere mislukte poging).
 app.post("/api/admin/orders/:id/resend-email", adminLimiter, requireAdmin, async (req, res) => {
   const data = read();
