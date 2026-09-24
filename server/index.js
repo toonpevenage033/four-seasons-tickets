@@ -12,6 +12,7 @@ const { generatePaymentQrDataUrl } = require("./payment-qr");
 const { sendTicketsEmail, sendPaymentInstructionsEmail } = require("./email");
 const {
   MAX_TICKETS,
+  EARLY_BIRD_CAP,
   MAX_QTY_PER_ORDER,
   PENDING_ORDER_TTL_HOURS,
   EVENT,
@@ -51,17 +52,12 @@ function generateReference(existingRefs) {
   return ref;
 }
 
-// Telt tickets die al betaald zijn + orders die nog binnen hun betaaltermijn kunnen slagen.
-function countActiveTickets(data) {
-  const now = Date.now();
-  const ttlMs = PENDING_ORDER_TTL_HOURS * 60 * 60 * 1000;
-  let count = data.tickets.filter((t) => t.status === "paid").length;
-  for (const order of data.orders) {
-    if (order.status === "awaiting_payment" && now - new Date(order.createdAt).getTime() < ttlMs) {
-      count += order.quantity;
-    }
-  }
-  return count;
+// Telt alleen écht bevestigde tickets (betaald of al gescand); een niet-bevestigde
+// reservering telt dus nog niet mee voor de teller, tot jij 'm in /admin bevestigt.
+function countSoldTickets(data, tierId) {
+  return data.tickets.filter(
+    (t) => (t.status === "paid" || t.status === "used") && (!tierId || t.tierId === tierId)
+  ).length;
 }
 
 function requireAdmin(req, res, next) {
@@ -83,26 +79,57 @@ function requireStaff(req, res, next) {
 app.get("/api/status", (req, res) => {
   const data = read();
   const now = new Date();
-  const tier = getCurrentTier(now);
-  const sold = countActiveTickets(data);
-  const remaining = Math.max(0, MAX_TICKETS - sold);
+  const dateTier = getCurrentTier(now);
+  const totalSold = countSoldTickets(data);
+  const totalRemaining = Math.max(0, MAX_TICKETS - totalSold);
 
-  if (!tier) {
+  // Helemaal uitverkocht (450/450 bevestigd): niets meer te koop, ongeacht datum.
+  if (totalRemaining <= 0) {
+    return res.json({ onSale: false, soldOut: true, remaining: 0, message: "Uitverkocht." });
+  }
+
+  if (!dateTier) {
     const next = getNextTier(now);
     return res.json({
       onSale: false,
-      soldOut: remaining <= 0,
-      remaining,
+      soldOut: false,
+      remaining: totalRemaining,
       message: next ? "Ticketverkoop is nog niet gestart." : "Ticketverkoop is gesloten.",
       nextTierStart: next ? next.start : null,
     });
   }
 
+  // Early Bird heeft een eigen sub-limiet van 100 tickets, los van de einddatum.
+  if (dateTier.id === "earlybird") {
+    const earlybirdSold = countSoldTickets(data, "earlybird");
+    const earlybirdRemaining = Math.max(0, EARLY_BIRD_CAP - earlybirdSold);
+
+    if (earlybirdRemaining <= 0) {
+      const next = getNextTier(now);
+      return res.json({
+        onSale: false,
+        soldOut: false,
+        remaining: totalRemaining,
+        message: "Early Bird is uitverkocht! Reguliere tickets starten binnenkort.",
+        nextTierStart: next ? next.start : null,
+      });
+    }
+
+    return res.json({
+      onSale: true,
+      soldOut: false,
+      remaining: earlybirdRemaining,
+      tier: { id: dateTier.id, label: dateTier.label, priceCents: dateTier.priceCents, priceFormatted: formatPrice(dateTier.priceCents) },
+      event: EVENT,
+      maxQtyPerOrder: MAX_QTY_PER_ORDER,
+    });
+  }
+
   res.json({
-    onSale: remaining > 0,
-    soldOut: remaining <= 0,
-    remaining,
-    tier: { id: tier.id, label: tier.label, priceCents: tier.priceCents, priceFormatted: formatPrice(tier.priceCents) },
+    onSale: true,
+    soldOut: false,
+    remaining: totalRemaining,
+    tier: { id: dateTier.id, label: dateTier.label, priceCents: dateTier.priceCents, priceFormatted: formatPrice(dateTier.priceCents) },
     event: EVENT,
     maxQtyPerOrder: MAX_QTY_PER_ORDER,
   });
@@ -132,9 +159,15 @@ app.post("/api/orders", orderLimiter, async (req, res) => {
     const amountCents = tier.priceCents * qty;
 
     const created = await transact(async (data) => {
-      const sold = countActiveTickets(data);
-      if (sold + qty > MAX_TICKETS) {
+      const totalSold = countSoldTickets(data);
+      if (totalSold + qty > MAX_TICKETS) {
         return { error: "Niet genoeg tickets meer beschikbaar." };
+      }
+      if (tier.id === "earlybird") {
+        const earlybirdSold = countSoldTickets(data, "earlybird");
+        if (earlybirdSold + qty > EARLY_BIRD_CAP) {
+          return { error: "Early Bird tickets zijn (bijna) uitverkocht, er zijn nog maar " + Math.max(0, EARLY_BIRD_CAP - earlybirdSold) + " over." };
+        }
       }
       const reference = generateReference(new Set(data.orders.map((o) => o.reference)));
       const order = {
@@ -194,7 +227,19 @@ app.post("/api/orders", orderLimiter, async (req, res) => {
 app.get("/api/admin/orders", adminLimiter, requireAdmin, (req, res) => {
   const data = read();
   const orders = [...data.orders].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-  res.json({ orders });
+
+  const earlybirdSold = countSoldTickets(data, "earlybird");
+  const totalSold = countSoldTickets(data);
+  const stats = {
+    totalSold,
+    totalRemaining: Math.max(0, MAX_TICKETS - totalSold),
+    maxTickets: MAX_TICKETS,
+    earlybirdSold,
+    earlybirdRemaining: Math.max(0, EARLY_BIRD_CAP - earlybirdSold),
+    earlybirdCap: EARLY_BIRD_CAP,
+  };
+
+  res.json({ orders, stats });
 });
 
 // Lichte check om direct te valideren of een toegangscode klopt, zonder verdere gevolgen.

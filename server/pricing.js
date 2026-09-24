@@ -1,5 +1,7 @@
 // Prijsfases en ticketlimiet voor het feest bij Four Seasons, Kastanjelaan 1, Leusden.
 const MAX_TICKETS = 450;
+// Early Bird heeft een eigen sub-limiet, los van de einddatum: op is op.
+const EARLY_BIRD_CAP = 100;
 const MAX_QTY_PER_ORDER = 6;
 // Order blijft "actief" (telt mee voor de limiet) totdat de handmatige betaaltermijn verloopt.
 const PENDING_ORDER_TTL_HOURS = 48;
@@ -25,13 +27,13 @@ const TIERS = [
     label: "Regular",
     priceCents: 1450,
     start: "2026-10-01T00:00:00",
-    end: "2026-10-24T00:00:00",
+    end: "2026-10-27T00:00:00",
   },
   {
     id: "latebird",
     label: "Late Bird",
     priceCents: 1750,
-    start: "2026-10-24T00:00:00",
+    start: "2026-10-27T00:00:00",
     end: "2026-11-01T02:00:00",
   },
 ];
@@ -55,6 +57,7 @@ function formatPrice(cents) {
 
 module.exports = {
   MAX_TICKETS,
+  EARLY_BIRD_CAP,
   MAX_QTY_PER_ORDER,
   PENDING_ORDER_TTL_HOURS,
   EVENT,

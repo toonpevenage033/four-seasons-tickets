@@ -3,6 +3,7 @@ const app = document.getElementById("app");
 const ordersBody = document.getElementById("orders-body");
 const refreshBtn = document.getElementById("refresh-btn");
 const adminNotice = document.getElementById("admin-notice");
+const statsBox = document.getElementById("stats-box");
 
 let adminToken = sessionStorage.getItem("adminToken") || "";
 
@@ -16,6 +17,16 @@ function showNotice(message, type = "success") {
   adminNotice.hidden = false;
 }
 
+function renderStats(stats) {
+  if (!stats) return;
+  statsBox.innerHTML = `
+    <div class="stat"><span>${stats.totalSold}</span><small>totaal verkocht (van ${stats.maxTickets})</small></div>
+    <div class="stat"><span>${stats.totalRemaining}</span><small>totaal nog beschikbaar</small></div>
+    <div class="stat"><span>${stats.earlybirdSold}</span><small>Early Bird verkocht (van ${stats.earlybirdCap})</small></div>
+    <div class="stat"><span>${stats.earlybirdRemaining}</span><small>Early Bird nog over</small></div>
+  `;
+}
+
 async function loadOrders() {
   const res = await fetch("/api/admin/orders", {
     headers: { "X-Admin-Token": adminToken },
@@ -27,6 +38,7 @@ async function loadOrders() {
     return;
   }
   const data = await res.json();
+  renderStats(data.stats);
   renderOrders(data.orders);
 }
 

@@ -3,6 +3,7 @@ const form = document.getElementById("order-form");
 const formError = document.getElementById("form-error");
 const paymentInstructions = document.getElementById("payment-instructions");
 const countdownBox = document.getElementById("countdown");
+const ticketCounter = document.getElementById("ticket-counter");
 
 let countdownTimer = null;
 
@@ -46,6 +47,7 @@ async function loadStatus() {
   if (!data.onSale) {
     statusBox.textContent = data.soldOut ? "Uitverkocht 😢" : data.message;
     form.hidden = true;
+    ticketCounter.hidden = true;
     if (!data.soldOut && data.nextTierStart) {
       startCountdown(data.nextTierStart);
     } else {
@@ -58,8 +60,9 @@ async function loadStatus() {
   statusBox.innerHTML = `
     <div>${data.tier.label} tarief</div>
     <div class="price">€ ${data.tier.priceFormatted}</div>
-    <div>${data.remaining} tickets nog beschikbaar</div>
   `;
+  document.getElementById("tc-remaining").textContent = data.remaining;
+  ticketCounter.hidden = false;
   form.hidden = false;
   form.querySelector('input[name="quantity"]').max = data.maxQtyPerOrder;
 }
