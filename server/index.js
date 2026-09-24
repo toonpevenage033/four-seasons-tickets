@@ -83,6 +83,16 @@ app.get("/api/status", (req, res) => {
   const totalSold = countSoldTickets(data);
   const totalRemaining = Math.max(0, MAX_TICKETS - totalSold);
 
+  // Noodstop: zet SALES_PAUSED=true in de environment variables om de verkoop direct te pauzeren.
+  if (process.env.SALES_PAUSED === "true") {
+    return res.json({
+      onSale: false,
+      soldOut: false,
+      remaining: totalRemaining,
+      message: "Ticketverkoop is tijdelijk gepauzeerd. Kom later terug.",
+    });
+  }
+
   // Helemaal uitverkocht (450/450 bevestigd): niets meer te koop, ongeacht datum.
   if (totalRemaining <= 0) {
     return res.json({ onSale: false, soldOut: true, remaining: 0, message: "Uitverkocht." });
@@ -137,6 +147,10 @@ app.get("/api/status", (req, res) => {
 
 app.post("/api/orders", orderLimiter, async (req, res) => {
   try {
+    if (process.env.SALES_PAUSED === "true") {
+      return res.status(400).json({ error: "Ticketverkoop is tijdelijk gepauzeerd. Probeer het later opnieuw." });
+    }
+
     const { name, email, quantity } = req.body;
     const qty = Number(quantity);
 
