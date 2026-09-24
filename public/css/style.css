@@ -347,6 +347,16 @@ a {
   cursor: pointer;
 }
 
+.search-input {
+  display: block;
+  width: 100%;
+  padding: 10px 14px;
+  margin-bottom: 12px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  font-size: 15px;
+}
+
 .admin-notice {
   padding: 12px 14px;
   border-radius: 8px;

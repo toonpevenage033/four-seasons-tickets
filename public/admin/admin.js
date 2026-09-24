@@ -4,8 +4,10 @@ const ordersBody = document.getElementById("orders-body");
 const refreshBtn = document.getElementById("refresh-btn");
 const adminNotice = document.getElementById("admin-notice");
 const statsBox = document.getElementById("stats-box");
+const searchInput = document.getElementById("search-input");
 
 let adminToken = sessionStorage.getItem("adminToken") || "";
+let allOrders = [];
 
 function formatCents(cents) {
   return (cents / 100).toFixed(2).replace(".", ",");
@@ -27,6 +29,18 @@ function renderStats(stats) {
   `;
 }
 
+function applyFilter() {
+  const query = searchInput.value.trim().toLowerCase();
+  const filtered = !query
+    ? allOrders
+    : allOrders.filter((o) =>
+        [o.reference, o.name, o.email].some((field) => (field || "").toLowerCase().includes(query))
+      );
+  renderOrders(filtered);
+}
+
+searchInput.addEventListener("input", applyFilter);
+
 async function loadOrders() {
   const res = await fetch("/api/admin/orders", {
     headers: { "X-Admin-Token": adminToken },
@@ -39,7 +53,8 @@ async function loadOrders() {
   }
   const data = await res.json();
   renderStats(data.stats);
-  renderOrders(data.orders);
+  allOrders = data.orders;
+  applyFilter();
 }
 
 async function checkToken(token) {
