@@ -224,6 +224,7 @@ app.post("/api/orders", orderLimiter, async (req, res) => {
         name: created.order.name,
         tier,
         quantity: qty,
+        amountCents,
         ...paymentInfo,
       });
     } catch (err) {

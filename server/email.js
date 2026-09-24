@@ -1,5 +1,7 @@
 const { Resend } = require("resend");
 const { EVENT, formatPrice } = require("./pricing");
+const { generateQrBuffer } = require("./qr");
+const { generatePaymentQrBuffer } = require("./payment-qr");
 
 let resend = null;
 function getResend() {
@@ -34,7 +36,7 @@ function ticketBlockHtml(ticket) {
     <div style="border:1px solid #e2e2e2;border-radius:12px;padding:20px;margin:16px 0;text-align:center;">
       <p style="margin:0 0 8px;font-size:14px;color:#666;">Ticketcode</p>
       <p style="margin:0 0 16px;font-family:monospace;font-size:16px;letter-spacing:1px;">${ticket.code}</p>
-      <img src="${ticket.qrDataUrl}" alt="QR-code ticket" width="220" height="220" />
+      <img src="cid:qr-${ticket.code}" alt="QR-code ticket" width="220" height="220" />
       <p style="margin:16px 0 0;font-size:13px;color:#888;">Laat deze QR-code scannen bij de ingang.</p>
     </div>
   `;
@@ -42,6 +44,17 @@ function ticketBlockHtml(ticket) {
 
 async function sendTicketsEmail({ to, name, tier, tickets, orderId }) {
   const ticketsHtml = tickets.map(ticketBlockHtml).join("");
+
+  // Echte bijlagen (cid) i.p.v. data:-afbeeldingen, want veel mailclients (Outlook, sommige webmail)
+  // blokkeren ingebedde data:-URL's, waardoor de QR als zwart/wit vlak verschijnt.
+  const attachments = await Promise.all(
+    tickets.map(async (ticket) => ({
+      filename: `ticket-${ticket.code}.png`,
+      content: (await generateQrBuffer(ticket.code)).toString("base64"),
+      contentId: `qr-${ticket.code}`,
+      contentType: "image/png",
+    }))
+  );
 
   const html = `
     <div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto;color:#222;">
@@ -73,11 +86,14 @@ async function sendTicketsEmail({ to, name, tier, tickets, orderId }) {
     to,
     subject: `Je ${tickets.length > 1 ? "tickets" : "ticket"} voor ${EVENT.name}`,
     html,
+    attachments,
   });
   return result;
 }
 
-async function sendPaymentInstructionsEmail({ to, name, tier, quantity, reference, amountFormatted, iban, accountHolder, paymentQrDataUrl }) {
+async function sendPaymentInstructionsEmail({ to, name, tier, quantity, reference, amountFormatted, amountCents, iban, accountHolder }) {
+  const paymentQrBuffer = await generatePaymentQrBuffer({ iban, accountHolder, amountCents, reference });
+
   const html = `
     <div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto;color:#222;">
       <h1 style="font-size:22px;">Bijna klaar — rond je betaling af 🎟️</h1>
@@ -94,7 +110,7 @@ async function sendPaymentInstructionsEmail({ to, name, tier, quantity, referenc
         Je ontvangt de echte ticket-QR pas nadat je betaling door ons is gecontroleerd en bevestigd.
       </div>
       <p><strong>Scan deze betaal-QR met je bankapp:</strong></p>
-      <p><img src="${paymentQrDataUrl}" alt="Betaal-QR-code" width="240" height="240" /></p>
+      <p><img src="cid:payment-qr-${reference}" alt="Betaal-QR-code" width="240" height="240" /></p>
       <p><strong>Controleer vóór het betalen:</strong> het bedrag, IBAN en vooral referentiecode <span style="font-family:monospace;">${reference}</span> moeten zichtbaar zijn in je bankapp.</p>
       <p style="font-size:13px;color:#888;">Vermeld altijd de omschrijving hierboven, anders kunnen we je betaling niet koppelen aan je bestelling. Reserveringen zonder betaling binnen ${require("./pricing").PENDING_ORDER_TTL_HOURS} uur vervallen automatisch.</p>
       <div style="background:#fdeaea;border:2px solid #b3261e;border-radius:10px;padding:16px;margin:16px 0;color:#7a1913;">
@@ -116,6 +132,14 @@ async function sendPaymentInstructionsEmail({ to, name, tier, quantity, referenc
     to,
     subject: `Rond je betaling af voor ${EVENT.name} — ref. ${reference}`,
     html,
+    attachments: [
+      {
+        filename: "betaal-qr.png",
+        content: paymentQrBuffer.toString("base64"),
+        contentId: `payment-qr-${reference}`,
+        contentType: "image/png",
+      },
+    ],
   });
   return result;
 }

@@ -26,4 +26,14 @@ async function generatePaymentQrDataUrl(details) {
   });
 }
 
-module.exports = { generatePaymentQrDataUrl };
+// Zelfde QR, maar als ruwe buffer voor een echte e-mailbijlage (cid) i.p.v. een
+// data:-URL, want veel e-mailprogramma's blokkeren ingebedde data:-afbeeldingen.
+async function generatePaymentQrBuffer(details) {
+  return QRCode.toBuffer(createEpcPayload(details), {
+    errorCorrectionLevel: "M",
+    margin: 2,
+    width: 280,
+  });
+}
+
+module.exports = { generatePaymentQrDataUrl, generatePaymentQrBuffer };
