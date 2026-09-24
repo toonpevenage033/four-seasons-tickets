@@ -350,6 +350,20 @@ app.post("/api/admin/orders/:id/cancel", adminLimiter, requireAdmin, async (req,
   res.json({ ok: true });
 });
 
+// Admin: verwijder een bestelling volledig (bv. test-data of vergissingen), ongeacht status.
+app.delete("/api/admin/orders/:id", adminLimiter, requireAdmin, async (req, res) => {
+  const result = await transact(async (data) => {
+    const orderIndex = data.orders.findIndex((o) => o.id === req.params.id);
+    if (orderIndex === -1) return { error: "Bestelling niet gevonden." };
+    data.orders.splice(orderIndex, 1);
+    data.tickets = data.tickets.filter((ticket) => ticket.orderId !== req.params.id);
+    return { ok: true };
+  });
+
+  if (result.error) return res.status(404).json({ error: result.error });
+  res.json({ ok: true });
+});
+
 // Admin: wijs een bestelling af (bv. geen betaling ontvangen) zodat de plekken vrijkomen.
 app.post("/api/admin/orders/:id/reject", adminLimiter, requireAdmin, async (req, res) => {
   const result = await transact(async (data) => {

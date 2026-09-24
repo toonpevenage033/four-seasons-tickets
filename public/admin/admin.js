@@ -101,6 +101,16 @@ function renderOrders(orders) {
       actionCell.append(cancelBtn);
     }
 
+    const deleteBtn = document.createElement("button");
+    deleteBtn.textContent = "Verwijder volledig";
+    deleteBtn.className = "reject-btn";
+    deleteBtn.onclick = () => {
+      if (confirm("Deze bestelling en bijbehorende ticket(s) volledig en onherroepelijk verwijderen (bv. test-data)?")) {
+        deleteOrder(order.id, deleteBtn);
+      }
+    };
+    actionCell.append(deleteBtn);
+
     ordersBody.appendChild(tr);
   }
 }
@@ -134,6 +144,27 @@ async function updateOrder(orderId, action, button, busyText) {
   } else {
     showNotice(actionNames[action] || "Actie uitgevoerd.");
   }
+  loadOrders();
+}
+
+async function deleteOrder(orderId, button) {
+  const originalText = button.textContent;
+  button.disabled = true;
+  button.textContent = "Verwijderen...";
+  showNotice("Actie wordt uitgevoerd...", "pending");
+
+  const res = await fetch(`/api/admin/orders/${orderId}`, {
+    method: "DELETE",
+    headers: { "X-Admin-Token": adminToken },
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    showNotice(data.error || "Er ging iets mis.", "error");
+    button.disabled = false;
+    button.textContent = originalText;
+    return;
+  }
+  showNotice("Bestelling volledig verwijderd.");
   loadOrders();
 }
 
