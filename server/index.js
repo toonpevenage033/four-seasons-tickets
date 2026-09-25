@@ -245,6 +245,8 @@ app.get("/api/admin/orders", adminLimiter, requireAdmin, (req, res) => {
 
   const earlybirdSold = countSoldTickets(data, "earlybird");
   const totalSold = countSoldTickets(data);
+  const awaitingOrders = data.orders.filter((order) => order.status === "awaiting_payment");
+  const paidOrders = data.orders.filter((order) => order.status === "paid");
   const stats = {
     totalSold,
     totalRemaining: Math.max(0, MAX_TICKETS - totalSold),
@@ -252,6 +254,9 @@ app.get("/api/admin/orders", adminLimiter, requireAdmin, (req, res) => {
     earlybirdSold,
     earlybirdRemaining: Math.max(0, EARLY_BIRD_CAP - earlybirdSold),
     earlybirdCap: EARLY_BIRD_CAP,
+    awaitingTickets: awaitingOrders.reduce((total, order) => total + order.quantity, 0),
+    awaitingRevenueCents: awaitingOrders.reduce((total, order) => total + order.amountCents, 0),
+    paidRevenueCents: paidOrders.reduce((total, order) => total + order.amountCents, 0),
   };
 
   res.json({ orders, stats });

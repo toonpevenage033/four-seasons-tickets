@@ -26,6 +26,9 @@ function renderStats(stats) {
     <div class="stat"><span>${stats.totalRemaining}</span><small>totaal nog beschikbaar</small></div>
     <div class="stat"><span>${stats.earlybirdSold}</span><small>Early Bird verkocht (van ${stats.earlybirdCap})</small></div>
     <div class="stat"><span>${stats.earlybirdRemaining}</span><small>Early Bird nog over</small></div>
+    <div class="stat"><span>${stats.awaitingTickets}</span><small>tickets wachten op betaling</small></div>
+    <div class="stat"><span>€ ${formatCents(stats.paidRevenueCents)}</span><small>ontvangen van betaalde tickets</small></div>
+    <div class="stat"><span>€ ${formatCents(stats.awaitingRevenueCents)}</span><small>nog openstaand bedrag</small></div>
   `;
 }
 
