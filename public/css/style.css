@@ -384,6 +384,21 @@ a {
 .row-action-success { color: #145c25; }
 .row-action-error { color: #842029; }
 
+.email-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.email-editor-input {
+  width: 220px;
+  padding: 7px 9px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 12px;
+}
+
 .orders-table {
   width: 100%;
   border-collapse: collapse;

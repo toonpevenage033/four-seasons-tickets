@@ -118,6 +118,22 @@ function renderOrders(orders) {
     const actionStatus = document.createElement("div");
     actionStatus.className = "row-action-status";
     actionCell.append(actionStatus);
+
+    const emailEditor = document.createElement("div");
+    emailEditor.className = "email-editor";
+    const emailInput = document.createElement("input");
+    emailInput.type = "email";
+    emailInput.value = order.email;
+    emailInput.placeholder = "Nieuw e-mailadres";
+    emailInput.className = "email-editor-input";
+    const emailSave = document.createElement("button");
+    emailSave.type = "button";
+    emailSave.textContent = "E-mail opslaan";
+    emailSave.className = "secondary-btn";
+    emailSave.onclick = () => updateEmail(order.id, emailInput, emailSave, actionStatus);
+    emailEditor.append(emailInput, emailSave);
+    actionCell.append(emailEditor);
+
     if (order.status === "awaiting_payment") {
       const approveBtn = document.createElement("button");
       approveBtn.textContent = "Bevestig betaling";
@@ -213,6 +229,39 @@ async function updateOrder(orderId, action, button, busyText) {
     refreshedStatus.textContent = data.emailError || actionNames[action] || "Actie uitgevoerd.";
     refreshedStatus.className = `row-action-status ${data.emailError ? "row-action-error" : "row-action-success"}`;
   }
+}
+
+async function updateEmail(orderId, input, button, statusElement) {
+  const email = input.value.trim();
+  if (!email) {
+    statusElement.textContent = "Vul een e-mailadres in.";
+    statusElement.className = "row-action-status row-action-error";
+    return;
+  }
+
+  button.disabled = true;
+  button.textContent = "Opslaan...";
+  statusElement.textContent = "E-mailadres wordt opgeslagen...";
+  statusElement.className = "row-action-status row-action-pending";
+
+  const res = await fetch(`/api/admin/orders/${orderId}/email`, {
+    method: "POST",
+    headers: { "X-Admin-Token": adminToken, "Content-Type": "application/json" },
+    body: JSON.stringify({ email }),
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    statusElement.textContent = data.error || "E-mailadres kon niet worden opgeslagen.";
+    statusElement.className = "row-action-status row-action-error";
+    button.disabled = false;
+    button.textContent = "E-mail opslaan";
+    return;
+  }
+
+  statusElement.textContent = "E-mailadres opgeslagen. Druk daarna op Mail opnieuw versturen.";
+  statusElement.className = "row-action-status row-action-success";
+  button.disabled = false;
+  button.textContent = "E-mail opgeslagen";
 }
 
 async function deleteOrder(orderId, button) {
