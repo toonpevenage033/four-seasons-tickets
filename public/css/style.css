@@ -421,6 +421,15 @@ a {
   color: #4a3800;
 }
 
+.reference-warning {
+  background: #fdeaea;
+  border: 2px solid #b3261e;
+  border-radius: 10px;
+  padding: 14px;
+  margin: 16px 0;
+  color: #7a1913;
+}
+
 .payment-qr {
   display: block;
   width: 240px;

@@ -103,8 +103,9 @@ async function sendPaymentInstructionsEmail({ to, name, tier, quantity, referenc
         <p style="margin:0 0 8px;"><strong>Bedrag:</strong> € ${amountFormatted}</p>
         <p style="margin:0 0 8px;"><strong>IBAN:</strong> ${iban}</p>
         <p style="margin:0 0 8px;"><strong>T.n.v.:</strong> ${accountHolder}</p>
-        <p style="margin:0;"><strong>Omschrijving (verplicht!):</strong> ${reference}</p>
+        <p style="margin:0;"><strong>Omschrijving overschrijving (verplicht):</strong> ${reference}</p>
       </div>
+      <div style="background:#fdeaea;border:2px solid #b3261e;border-radius:10px;padding:14px;margin:16px 0;color:#7a1913;"><strong>Zet ${reference} in het veld Omschrijving van je bankoverschrijving.</strong> Controleer dit vóór je verzendt. Zonder deze code kunnen we je betaling niet koppelen.</div>
       <div style="background:#fff3cd;border:1px solid #e0b84c;border-radius:10px;padding:14px;margin:16px 0;">
         <strong>Belangrijk:</strong> dit is alleen de QR-code om te betalen. Dit is nog niet je toegangsticket.
         Je ontvangt de echte ticket-QR pas nadat je betaling door ons is gecontroleerd en bevestigd.
@@ -112,7 +113,7 @@ async function sendPaymentInstructionsEmail({ to, name, tier, quantity, referenc
       <p><strong>Scan deze betaal-QR met je bankapp:</strong></p>
       <p><img src="cid:payment-qr-${reference}" alt="Betaal-QR-code" width="240" height="240" /></p>
       <p><strong>Controleer vóór het betalen:</strong> het bedrag, IBAN en vooral referentiecode <span style="font-family:monospace;">${reference}</span> moeten zichtbaar zijn in je bankapp.</p>
-      <p style="font-size:13px;color:#888;">Vermeld altijd de omschrijving hierboven, anders kunnen we je betaling niet koppelen aan je bestelling. Reserveringen zonder betaling binnen ${require("./pricing").PENDING_ORDER_TTL_HOURS} uur vervallen automatisch.</p>
+      <p style="font-size:13px;color:#888;">Vul de referentiecode in bij <strong>Omschrijving</strong> van de overschrijving. Reserveringen zonder betaling binnen ${require("./pricing").PENDING_ORDER_TTL_HOURS} uur vervallen automatisch.</p>
       <div style="background:#fdeaea;border:2px solid #b3261e;border-radius:10px;padding:16px;margin:16px 0;color:#7a1913;">
         <strong>Belangrijke voorwaarden:</strong>
         <ul style="padding-left:18px;margin:8px 0 0;">
@@ -156,8 +157,9 @@ async function sendPaymentReminderEmail({ to, name, tier, quantity, reference, a
         <p style="margin:0 0 8px;"><strong>Bedrag:</strong> € ${amountFormatted}</p>
         <p style="margin:0 0 8px;"><strong>IBAN:</strong> ${iban}</p>
         <p style="margin:0 0 8px;"><strong>T.n.v.:</strong> ${accountHolder}</p>
-        <p style="margin:0;"><strong>Omschrijving (verplicht!):</strong> ${reference}</p>
+        <p style="margin:0;"><strong>Omschrijving overschrijving (verplicht):</strong> ${reference}</p>
       </div>
+      <div style="background:#fdeaea;border:2px solid #b3261e;border-radius:10px;padding:14px;margin:16px 0;color:#7a1913;"><strong>Zet ${reference} in het veld Omschrijving van je bankoverschrijving.</strong> Controleer dit vóór je verzendt. Zonder deze code kunnen we je betaling niet koppelen.</div>
       <div style="background:#fff3cd;border:1px solid #e0b84c;border-radius:10px;padding:14px;margin:16px 0;">
         <strong>Let op:</strong> zet de code <span style="font-family:monospace;">${reference}</span> écht in de <strong>omschrijving</strong> van je overschrijving. Zonder deze code kunnen we je betaling niet aan je bestelling koppelen en krijg je geen ticket.
       </div>
