@@ -238,6 +238,60 @@ app.post("/api/orders", orderLimiter, async (req, res) => {
   }
 });
 
+// Admin: maak een gratis ticket aan, bijvoorbeeld voor een genodigde.
+app.post("/api/admin/complimentary", adminLimiter, requireAdmin, async (req, res) => {
+  const name = "Duuk Meijer";
+  const email = "duukmeijer2011@gmail.com";
+  const quantity = 1;
+  const tier = getCurrentTier() || require("./pricing").TIERS[1];
+  const orderId = crypto.randomUUID();
+  const amountCents = tier.priceCents;
+
+  const result = await transact(async (data) => {
+    const reference = generateReference(new Set(data.orders.map((o) => o.reference)));
+    const order = {
+      id: orderId,
+      reference,
+      name,
+      email,
+      quantity,
+      tierId: tier.id,
+      priceCents: tier.priceCents,
+      amountCents,
+      status: "paid",
+      complimentary: true,
+      createdAt: new Date().toISOString(),
+      confirmedAt: new Date().toISOString(),
+    };
+    const ticket = {
+      code: generateTicketCode(),
+      orderId,
+      tierId: tier.id,
+      status: "paid",
+      createdAt: new Date().toISOString(),
+      usedAt: null,
+    };
+    data.orders.push(order);
+    data.tickets.push(ticket);
+    return { order, ticket };
+  });
+
+  const ticketWithQr = { ...result.ticket, qrDataUrl: await generateQrDataUrl(result.ticket.code) };
+  try {
+    await sendTicketsEmail({
+      to: email,
+      name,
+      tier,
+      tickets: [ticketWithQr],
+      orderId,
+    });
+    res.json({ ok: true, reference: result.order.reference, emailError: null });
+  } catch (err) {
+    console.error("Fout bij versturen gratis ticket-e-mail:", err);
+    res.json({ ok: true, reference: result.order.reference, emailError: err.message });
+  }
+});
+
 // Admin: overzicht van bestellingen die wachten op handmatige betaalbevestiging.
 app.get("/api/admin/orders", adminLimiter, requireAdmin, (req, res) => {
   const data = read();
