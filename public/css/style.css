@@ -399,6 +399,16 @@ a {
   border-bottom: 1px solid #eee;
 }
 
+.orders-table .date-divider td {
+  padding: 14px 12px 8px;
+  border-bottom: 2px solid var(--accent);
+  background: #f6f1e5;
+  color: #5a4300;
+  font-size: 16px;
+  font-weight: 700;
+  text-transform: capitalize;
+}
+
 .approve-btn, .reject-btn {
   padding: 6px 10px;
   border: none;

@@ -68,10 +68,40 @@ async function checkToken(token) {
 
 function renderOrders(orders) {
   ordersBody.innerHTML = "";
+  let previousDateKey = "";
   for (const order of orders) {
+    const createdAt = new Date(order.createdAt);
+    const dateKey = new Intl.DateTimeFormat("sv-SE", {
+      timeZone: "Europe/Amsterdam",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).format(createdAt);
+
+    if (dateKey !== previousDateKey) {
+      const divider = document.createElement("tr");
+      divider.className = "date-divider";
+      const dividerCell = document.createElement("td");
+      dividerCell.colSpan = 8;
+      dividerCell.textContent = new Intl.DateTimeFormat("nl-NL", {
+        timeZone: "Europe/Amsterdam",
+        weekday: "long",
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      }).format(createdAt);
+      divider.appendChild(dividerCell);
+      ordersBody.appendChild(divider);
+      previousDateKey = dateKey;
+    }
+
     const tr = document.createElement("tr");
     tr.dataset.orderId = order.id;
-    const date = new Date(order.createdAt).toLocaleString("nl-NL");
+    const date = createdAt.toLocaleTimeString("nl-NL", {
+      timeZone: "Europe/Amsterdam",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
 
     tr.innerHTML = `
       <td>${date}</td>
