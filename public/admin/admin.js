@@ -70,6 +70,7 @@ function renderOrders(orders) {
   ordersBody.innerHTML = "";
   for (const order of orders) {
     const tr = document.createElement("tr");
+    tr.dataset.orderId = order.id;
     const date = new Date(order.createdAt).toLocaleString("nl-NL");
 
     tr.innerHTML = `
@@ -84,6 +85,9 @@ function renderOrders(orders) {
     `;
 
     const actionCell = tr.lastElementChild;
+    const actionStatus = document.createElement("div");
+    actionStatus.className = "row-action-status";
+    actionCell.append(actionStatus);
     if (order.status === "awaiting_payment") {
       const approveBtn = document.createElement("button");
       approveBtn.textContent = "Bevestig betaling";
@@ -137,9 +141,12 @@ function renderOrders(orders) {
 
 async function updateOrder(orderId, action, button, busyText) {
   const originalText = button.textContent;
+  const actionCell = button.closest("td");
+  const rowStatus = actionCell.querySelector(".row-action-status");
   button.disabled = true;
   button.textContent = busyText;
-  showNotice("Actie wordt uitgevoerd...", "pending");
+  rowStatus.textContent = "Actie wordt uitgevoerd...";
+  rowStatus.className = "row-action-status row-action-pending";
 
   const actionNames = {
     approve: "Betaling bevestigd.",
@@ -155,17 +162,27 @@ async function updateOrder(orderId, action, button, busyText) {
   });
   const data = await res.json();
   if (!res.ok) {
-    showNotice(data.error || "Er ging iets mis.", "error");
+    const message = data.error || "Er ging iets mis.";
+    rowStatus.textContent = message;
+    rowStatus.className = "row-action-status row-action-error";
     button.disabled = false;
     button.textContent = originalText;
     return;
   }
   if (data.emailError) {
-    showNotice(data.emailError, "error");
+    rowStatus.textContent = data.emailError;
+    rowStatus.className = "row-action-status row-action-error";
   } else {
-    showNotice(actionNames[action] || "Actie uitgevoerd.");
+    rowStatus.textContent = actionNames[action] || "Actie uitgevoerd.";
+    rowStatus.className = "row-action-status row-action-success";
   }
-  loadOrders();
+  await loadOrders();
+  const refreshedRow = ordersBody.querySelector(`[data-order-id="${orderId}"]`);
+  if (refreshedRow) {
+    const refreshedStatus = refreshedRow.querySelector(".row-action-status");
+    refreshedStatus.textContent = data.emailError || actionNames[action] || "Actie uitgevoerd.";
+    refreshedStatus.className = `row-action-status ${data.emailError ? "row-action-error" : "row-action-success"}`;
+  }
 }
 
 async function deleteOrder(orderId, button) {

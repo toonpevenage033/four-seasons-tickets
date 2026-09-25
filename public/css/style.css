@@ -373,6 +373,17 @@ a {
   cursor: wait;
 }
 
+.row-action-status {
+  max-width: 220px;
+  margin-top: 8px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.row-action-pending { color: #5a4300; }
+.row-action-success { color: #145c25; }
+.row-action-error { color: #842029; }
+
 .orders-table {
   width: 100%;
   border-collapse: collapse;
