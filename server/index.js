@@ -21,6 +21,9 @@ const {
   formatPrice,
 } = require("./pricing");
 
+const SALES_CLOSED = true;
+const SALES_CLOSED_MESSAGE = "UITVERKOCHT!!! Helaas je bent te laat, maar niet getreurd we zijn iets aan t koken...";
+
 const app = express();
 app.set("trust proxy", 1); // nodig achter Render's reverse proxy, anders werkt rate-limiting per IP niet goed
 app.use(helmet({ contentSecurityPolicy: false })); // CSP uit: blokkeert anders de inline scripts/CDN-libs die de pagina's gebruiken
@@ -77,6 +80,10 @@ function requireStaff(req, res, next) {
 }
 
 app.get("/api/status", (req, res) => {
+  if (SALES_CLOSED) {
+    return res.json({ onSale: false, soldOut: true, remaining: 0, message: SALES_CLOSED_MESSAGE });
+  }
+
   const data = read();
   const now = new Date();
   const dateTier = getCurrentTier(now);
@@ -146,6 +153,10 @@ app.get("/api/status", (req, res) => {
 });
 
 app.post("/api/orders", orderLimiter, async (req, res) => {
+  if (SALES_CLOSED) {
+    return res.status(409).json({ error: SALES_CLOSED_MESSAGE });
+  }
+
   try {
     if (process.env.SALES_PAUSED === "true") {
       return res.status(400).json({ error: "Ticketverkoop is tijdelijk gepauzeerd. Probeer het later opnieuw." });

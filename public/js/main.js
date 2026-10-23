@@ -54,9 +54,13 @@ async function loadStatus() {
   const data = await res.json();
 
   if (!data.onSale) {
-    statusBox.textContent = data.soldOut ? "Uitverkocht 😢" : data.message;
+    statusBox.textContent = data.message;
+    statusBox.hidden = data.soldOut;
     form.hidden = true;
-    ticketCounter.hidden = true;
+    ticketCounter.hidden = !data.soldOut;
+    if (data.soldOut) {
+      ticketCounter.textContent = data.message;
+    }
     if (!data.soldOut && data.nextTierStart) {
       startCountdown(data.nextTierStart);
     } else {
