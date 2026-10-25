@@ -102,20 +102,38 @@ socialTicketForm.addEventListener("submit", async (event) => {
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || "Socialtickets konden niet worden aangemaakt.");
 
-    if (data.duplicate) {
-      socialTicketResult.textContent = "Deze batch is al verwerkt. Er zijn geen dubbele tickets aangemaakt en er zijn geen e-mails opnieuw verstuurd. Controleer de bestellingen hieronder.";
-      socialTicketResult.className = "admin-notice admin-notice-pending";
-    } else {
-      const failed = data.orders.filter((order) => order.emailError);
-      const failureSummary = failed.length
-        ? ` Mislukte e-mails: ${failed.map((order) => order.email).join(", ")}. Verstuur die opnieuw vanuit de bestellingenlijst.`
-        : " Alle ticketmails zijn verstuurd.";
-      socialTicketResult.textContent = `${data.totalTickets} tickets aangemaakt voor €25 per ticket.${failureSummary}`;
-      socialTicketResult.className = `admin-notice ${failed.length ? "admin-notice-error" : "admin-notice-success"}`;
+    const results = [];
+    for (let index = 0; index < data.orders.length; index++) {
+      const order = data.orders[index];
+      if (order.emailSentAt) {
+        results.push({ email: order.email, status: "sent" });
+        continue;
+      }
+
+      socialTicketResult.textContent = `Ticketmail ${index + 1} van ${data.orders.length}: ${order.email}`;
+      try {
+        const mailRes = await fetch(`/api/admin/social-orders/${order.id}/send`, {
+          method: "POST",
+          headers: { "X-Admin-Token": adminToken },
+        });
+        const mailData = await mailRes.json();
+        if (!mailRes.ok) throw new Error(mailData.error || "E-mail versturen is mislukt.");
+        results.push({ email: order.email, status: "sent" });
+      } catch (err) {
+        results.push({ email: order.email, status: "failed", error: err.message });
+      }
     }
-    sessionStorage.removeItem("socialTicketBatchId");
-    socialTicketList.value = "";
-    socialTicketPaid.checked = false;
+
+    const failed = results.filter((result) => result.status === "failed");
+    socialTicketResult.textContent = failed.length
+      ? `${data.totalTickets} tickets geregistreerd. E-mail niet bevestigd voor: ${failed.map((result) => result.email).join(", ")}. Controleer de bestellingen vóór opnieuw versturen.`
+      : `${data.totalTickets} tickets geregistreerd en alle ticketmails zijn verstuurd.`;
+    socialTicketResult.className = `admin-notice ${failed.length ? "admin-notice-error" : "admin-notice-success"}`;
+    if (!failed.length) {
+      sessionStorage.removeItem("socialTicketBatchId");
+      socialTicketList.value = "";
+      socialTicketPaid.checked = false;
+    }
     await loadOrders();
   } catch (err) {
     socialTicketResult.textContent = err.message || "Er ging iets mis. Probeer dezelfde lijst opnieuw; een verwerkte batch wordt niet dubbel aangemaakt.";

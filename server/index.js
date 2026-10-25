@@ -346,7 +346,7 @@ app.post("/api/admin/social-orders", adminLimiter, requireAdmin, async (req, res
       }
       return {
         duplicate: true,
-        orders: existing.map(({ id, email, quantity, emailError }) => ({ id, email, quantity, emailError })),
+        orders: existing.map(({ id, email, quantity, emailError, emailSentAt }) => ({ id, email, quantity, emailError, emailSentAt })),
       };
     }
 
@@ -393,24 +393,60 @@ app.post("/api/admin/social-orders", adminLimiter, requireAdmin, async (req, res
   });
 
   if (created.error) return res.status(409).json({ error: created.error });
-  if (created.duplicate) return res.json({ duplicate: true, orders: created.orders });
+  res.json({
+    ok: true,
+    duplicate: !!created.duplicate,
+    totalTickets: totalRequested,
+    orders: created.orders.map(({ id, email, quantity, emailError, emailSentAt }) => ({ id, email, quantity, emailError, emailSentAt })),
+  });
+});
 
-  const results = [];
-  for (const { order, tickets } of created.orders) {
-    let emailError = null;
-    try {
-      await sendTicketsEmail({ to: order.email, name: "daar", tier, tickets, orderId: order.id });
-    } catch (err) {
-      console.error(`Fout bij socialticket-e-mail voor ${order.email}:`, err);
-      emailError = err.message || "E-mail versturen is mislukt.";
-      await transact(async (data) => {
-        const savedOrder = data.orders.find((item) => item.id === order.id);
-        if (savedOrder) savedOrder.emailError = emailError;
-      });
+app.post("/api/admin/social-orders/:id/send", adminLimiter, requireAdmin, async (req, res) => {
+  const started = await transact(async (data) => {
+    const order = data.orders.find((item) => item.id === req.params.id && item.source === "social");
+    if (!order) return { error: "Socialbestelling niet gevonden." };
+    if (order.emailSentAt) return { alreadySent: true, email: order.email };
+    if (order.emailSendingAt && Date.now() - new Date(order.emailSendingAt).getTime() < 10 * 60 * 1000) {
+      return { error: "De ticketmail voor dit adres wordt al verwerkt." };
     }
-    results.push({ id: order.id, email: order.email, quantity: order.quantity, emailError });
+
+    order.emailSendingAt = new Date().toISOString();
+    return {
+      order: { id: order.id, email: order.email, quantity: order.quantity },
+      tickets: data.tickets.filter((ticket) => ticket.orderId === order.id),
+    };
+  });
+  if (started.error) return res.status(409).json({ error: started.error });
+  if (started.alreadySent) return res.json({ ok: true, alreadySent: true, email: started.email });
+  if (started.tickets.length !== started.order.quantity) {
+    return res.status(409).json({ error: "Het aantal tickets bij deze bestelling klopt niet." });
   }
-  res.json({ ok: true, totalTickets: totalRequested, orders: results });
+
+  try {
+    const tier = { id: "social25", label: "Social ticket", priceCents: 2500 };
+    await sendTicketsEmail({ to: started.order.email, name: "daar", tier, tickets: started.tickets, orderId: started.order.id });
+  } catch (err) {
+    console.error(`Fout bij socialticket-e-mail voor ${started.order.email}:`, err);
+    const emailError = err.message || "E-mail versturen is mislukt.";
+    await transact(async (data) => {
+      const order = data.orders.find((item) => item.id === started.order.id);
+      if (order) {
+        delete order.emailSendingAt;
+        order.emailError = emailError;
+      }
+    });
+    return res.status(502).json({ error: emailError });
+  }
+
+  await transact(async (data) => {
+    const order = data.orders.find((item) => item.id === started.order.id);
+    if (order) {
+      order.emailSentAt = new Date().toISOString();
+      delete order.emailSendingAt;
+      delete order.emailError;
+    }
+  });
+  res.json({ ok: true, email: started.order.email });
 });
 
 // Admin: overzicht van bestellingen die wachten op handmatige betaalbevestiging.
