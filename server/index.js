@@ -397,7 +397,15 @@ app.post("/api/admin/social-orders", adminLimiter, requireAdmin, async (req, res
     ok: true,
     duplicate: !!created.duplicate,
     totalTickets: totalRequested,
-    orders: created.orders.map(({ id, email, quantity, emailError, emailSentAt }) => ({ id, email, quantity, emailError, emailSentAt })),
+    orders: created.duplicate
+      ? created.orders
+      : created.orders.map(({ order }) => ({
+          id: order.id,
+          email: order.email,
+          quantity: order.quantity,
+          emailError: order.emailError,
+          emailSentAt: order.emailSentAt,
+        })),
   });
 });
 
