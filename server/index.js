@@ -23,6 +23,7 @@ const {
 
 const SALES_CLOSED = true;
 const SALES_CLOSED_MESSAGE = "UITVERKOCHT!!! Helaas je bent te laat, maar niet getreurd we zijn iets aan t koken...";
+const SOCIAL_BATCH_TICKET_CAPACITY = 34;
 
 const app = express();
 app.set("trust proxy", 1); // nodig achter Render's reverse proxy, anders werkt rate-limiting per IP niet goed
@@ -332,6 +333,9 @@ app.post("/api/admin/social-orders", adminLimiter, requireAdmin, async (req, res
   }
 
   const totalRequested = normalizedOrders.reduce((total, order) => total + order.quantity, 0);
+  if (totalRequested !== SOCIAL_BATCH_TICKET_CAPACITY) {
+    return res.status(400).json({ error: `Deze batch moet precies ${SOCIAL_BATCH_TICKET_CAPACITY} betaalde tickets bevatten.` });
+  }
   const batchSignature = crypto.createHash("sha256").update(JSON.stringify(normalizedOrders)).digest("hex");
   const tier = { id: "social25", label: "Social ticket", priceCents: 2500 };
   const created = await transact(async (data) => {
@@ -346,12 +350,11 @@ app.post("/api/admin/social-orders", adminLimiter, requireAdmin, async (req, res
       };
     }
 
-    const pendingTickets = data.orders
-      .filter((order) => order.status === "awaiting_payment")
+    const previouslyIssuedSocialTickets = data.orders
+      .filter((order) => order.source === "social")
       .reduce((total, order) => total + order.quantity, 0);
-    const available = Math.max(0, MAX_TICKETS - countSoldTickets(data) - pendingTickets);
-    if (totalRequested > available) {
-      return { error: `Er zijn maar ${available} tickets beschikbaar volgens de administratie; ${totalRequested} zijn aangevraagd.` };
+    if (previouslyIssuedSocialTickets + totalRequested > SOCIAL_BATCH_TICKET_CAPACITY) {
+      return { error: "De batch van 34 socialtickets is al volledig of gedeeltelijk uitgegeven." };
     }
 
     const now = new Date().toISOString();
