@@ -303,6 +303,113 @@ app.post("/api/admin/complimentary", adminLimiter, requireAdmin, async (req, res
   }
 });
 
+app.post("/api/admin/social-orders", adminLimiter, requireAdmin, async (req, res) => {
+  const { batchId, orders: requestedOrders } = req.body;
+  if (typeof batchId !== "string" || !/^[0-9a-f-]{36}$/i.test(batchId)) {
+    return res.status(400).json({ error: "Ongeldig batchnummer." });
+  }
+  if (!Array.isArray(requestedOrders) || requestedOrders.length < 1 || requestedOrders.length > 30) {
+    return res.status(400).json({ error: "Voeg 1 tot 30 betaalde socialbestellingen toe." });
+  }
+
+  const seenEmails = new Set();
+  const normalizedOrders = [];
+  for (const requested of requestedOrders) {
+    const email = typeof requested.email === "string" ? requested.email.trim() : "";
+    const quantity = Number(requested.quantity);
+    const emailKey = email.toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return res.status(400).json({ error: `Ongeldig e-mailadres: ${email || "(leeg)"}.` });
+    }
+    if (seenEmails.has(emailKey)) {
+      return res.status(400).json({ error: `E-mailadres staat meerdere keren in de lijst: ${email}.` });
+    }
+    if (!Number.isInteger(quantity) || quantity < 1 || quantity > MAX_QTY_PER_ORDER) {
+      return res.status(400).json({ error: `Aantal voor ${email} moet tussen 1 en ${MAX_QTY_PER_ORDER} zijn.` });
+    }
+    seenEmails.add(emailKey);
+    normalizedOrders.push({ email, quantity });
+  }
+
+  const totalRequested = normalizedOrders.reduce((total, order) => total + order.quantity, 0);
+  const batchSignature = crypto.createHash("sha256").update(JSON.stringify(normalizedOrders)).digest("hex");
+  const tier = { id: "social25", label: "Social ticket", priceCents: 2500 };
+  const created = await transact(async (data) => {
+    const existing = data.orders.filter((order) => order.socialBatchId === batchId);
+    if (existing.length) {
+      if (existing[0].socialBatchSignature !== batchSignature) {
+        return { error: "Dit batchnummer is al gebruikt voor een andere lijst." };
+      }
+      return {
+        duplicate: true,
+        orders: existing.map(({ id, email, quantity, emailError }) => ({ id, email, quantity, emailError })),
+      };
+    }
+
+    const pendingTickets = data.orders
+      .filter((order) => order.status === "awaiting_payment")
+      .reduce((total, order) => total + order.quantity, 0);
+    const available = Math.max(0, MAX_TICKETS - countSoldTickets(data) - pendingTickets);
+    if (totalRequested > available) {
+      return { error: `Er zijn maar ${available} tickets beschikbaar volgens de administratie; ${totalRequested} zijn aangevraagd.` };
+    }
+
+    const now = new Date().toISOString();
+    const orders = normalizedOrders.map(({ email, quantity }) => {
+      const id = crypto.randomUUID();
+      const order = {
+        id,
+        reference: generateReference(new Set(data.orders.map((item) => item.reference))),
+        name: "Social ticket",
+        email,
+        quantity,
+        tierId: tier.id,
+        tierLabel: tier.label,
+        priceCents: tier.priceCents,
+        amountCents: tier.priceCents * quantity,
+        status: "paid",
+        source: "social",
+        socialBatchId: batchId,
+        socialBatchSignature: batchSignature,
+        createdAt: now,
+        confirmedAt: now,
+      };
+      const tickets = Array.from({ length: quantity }, () => ({
+        code: generateTicketCode(),
+        orderId: id,
+        tierId: tier.id,
+        status: "paid",
+        createdAt: now,
+        usedAt: null,
+      }));
+      data.orders.push(order);
+      data.tickets.push(...tickets);
+      return { order, tickets };
+    });
+    return { orders };
+  });
+
+  if (created.error) return res.status(409).json({ error: created.error });
+  if (created.duplicate) return res.json({ duplicate: true, orders: created.orders });
+
+  const results = [];
+  for (const { order, tickets } of created.orders) {
+    let emailError = null;
+    try {
+      await sendTicketsEmail({ to: order.email, name: "daar", tier, tickets, orderId: order.id });
+    } catch (err) {
+      console.error(`Fout bij socialticket-e-mail voor ${order.email}:`, err);
+      emailError = err.message || "E-mail versturen is mislukt.";
+      await transact(async (data) => {
+        const savedOrder = data.orders.find((item) => item.id === order.id);
+        if (savedOrder) savedOrder.emailError = emailError;
+      });
+    }
+    results.push({ id: order.id, email: order.email, quantity: order.quantity, emailError });
+  }
+  res.json({ ok: true, totalTickets: totalRequested, orders: results });
+});
+
 // Admin: overzicht van bestellingen die wachten op handmatige betaalbevestiging.
 app.get("/api/admin/orders", adminLimiter, requireAdmin, (req, res) => {
   const data = read();
@@ -407,7 +514,9 @@ app.post("/api/admin/orders/:id/resend-email", adminLimiter, requireAdmin, async
   const tickets = data.tickets.filter((t) => t.orderId === order.id);
   if (tickets.length === 0) return res.status(404).json({ error: "Geen tickets gevonden voor deze bestelling." });
 
-  const tierMeta = require("./pricing").TIERS.find((t) => t.id === order.tierId);
+  const tierMeta = require("./pricing").TIERS.find((t) => t.id === order.tierId)
+    || (order.source === "social" ? { label: order.tierLabel, priceCents: order.priceCents } : null);
+  if (!tierMeta) return res.status(409).json({ error: "Ticketprijs niet gevonden voor deze bestelling." });
   try {
     await sendTicketsEmail({
       to: order.email,

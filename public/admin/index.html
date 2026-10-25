@@ -21,6 +21,20 @@
 
     <div id="app" hidden>
       <div id="stats-box" class="stats-box"></div>
+      <section class="social-ticket-panel">
+        <h2>Betaalde socialtickets versturen</h2>
+        <p>Een regel per e-mailadres, als <strong>e-mailadres,aantal</strong>. Er wordt €25 per ticket geregistreerd.</p>
+        <form id="social-ticket-form">
+          <label for="social-ticket-list">E-mailadressen en aantallen</label>
+          <textarea id="social-ticket-list" class="social-ticket-input" rows="10" required></textarea>
+          <label class="checkbox-label">
+            <input id="social-ticket-paid" type="checkbox" required />
+            Ik bevestig dat alle tickets in deze lijst betaald zijn
+          </label>
+          <button id="social-ticket-submit" class="approve-btn" type="submit">Maak tickets en verstuur e-mails</button>
+          <p id="social-ticket-result" class="admin-notice" role="status" hidden></p>
+        </form>
+      </section>
       <input id="search-input" class="search-input" type="text" placeholder="Zoek op referentiecode, naam of e-mail..." />
       <button id="refresh-btn" class="secondary-btn">Ververs lijst</button>
       <p id="admin-notice" class="admin-notice" hidden></p>

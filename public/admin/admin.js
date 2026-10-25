@@ -5,6 +5,11 @@ const refreshBtn = document.getElementById("refresh-btn");
 const adminNotice = document.getElementById("admin-notice");
 const statsBox = document.getElementById("stats-box");
 const searchInput = document.getElementById("search-input");
+const socialTicketForm = document.getElementById("social-ticket-form");
+const socialTicketList = document.getElementById("social-ticket-list");
+const socialTicketPaid = document.getElementById("social-ticket-paid");
+const socialTicketSubmit = document.getElementById("social-ticket-submit");
+const socialTicketResult = document.getElementById("social-ticket-result");
 
 let adminToken = sessionStorage.getItem("adminToken") || "";
 let allOrders = [];
@@ -18,6 +23,108 @@ function showNotice(message, type = "success") {
   adminNotice.className = `admin-notice admin-notice-${type}`;
   adminNotice.hidden = false;
 }
+
+function parseSocialTicketList(value) {
+  const lines = value.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+  if (lines.length < 1 || lines.length > 30) {
+    return { error: "Vul 1 tot 30 regels in." };
+  }
+
+  const seenEmails = new Set();
+  const orders = [];
+  for (const line of lines) {
+    const fields = line.split(/[,;\t]/).map((field) => field.trim());
+    const email = fields[0] || "";
+    const quantity = Number(fields[1]);
+    if (fields.length !== 2 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return { error: `Controleer deze regel: ${line}` };
+    }
+    if (seenEmails.has(email.toLowerCase())) {
+      return { error: `Dit e-mailadres staat dubbel in de lijst: ${email}.` };
+    }
+    if (!Number.isInteger(quantity) || quantity < 1 || quantity > 6) {
+      return { error: `Het aantal voor ${email} moet tussen 1 en 6 zijn.` };
+    }
+    seenEmails.add(email.toLowerCase());
+    orders.push({ email, quantity });
+  }
+  return { orders, totalTickets: orders.reduce((total, order) => total + order.quantity, 0) };
+}
+
+socialTicketList.addEventListener("input", () => {
+  const parsed = parseSocialTicketList(socialTicketList.value);
+  if (parsed.error) {
+    socialTicketResult.hidden = true;
+    return;
+  }
+  socialTicketResult.textContent = `${parsed.orders.length} e-mailadressen, ${parsed.totalTickets} tickets, totaal € ${formatCents(parsed.totalTickets * 2500)}.`;
+  socialTicketResult.className = "admin-notice admin-notice-pending";
+  socialTicketResult.hidden = false;
+});
+
+socialTicketForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const parsed = parseSocialTicketList(socialTicketList.value);
+  if (parsed.error) {
+    socialTicketResult.textContent = parsed.error;
+    socialTicketResult.className = "admin-notice admin-notice-error";
+    socialTicketResult.hidden = false;
+    return;
+  }
+  if (!socialTicketPaid.checked) {
+    socialTicketResult.textContent = "Bevestig eerst dat alle tickets betaald zijn.";
+    socialTicketResult.className = "admin-notice admin-notice-error";
+    socialTicketResult.hidden = false;
+    return;
+  }
+  const amount = formatCents(parsed.totalTickets * 2500);
+  if (!confirm(`Maak ${parsed.totalTickets} betaalde tickets aan voor €25 per ticket (€${amount} totaal) en verstuur ze naar ${parsed.orders.length} adressen?`)) {
+    return;
+  }
+
+  let batchId = sessionStorage.getItem("socialTicketBatchId");
+  if (!batchId) {
+    batchId = crypto.randomUUID();
+    sessionStorage.setItem("socialTicketBatchId", batchId);
+  }
+  socialTicketSubmit.disabled = true;
+  socialTicketSubmit.textContent = "Tickets aanmaken en versturen...";
+  socialTicketResult.textContent = "Voorraad controleren en tickets verwerken...";
+  socialTicketResult.className = "admin-notice admin-notice-pending";
+  socialTicketResult.hidden = false;
+
+  try {
+    const res = await fetch("/api/admin/social-orders", {
+      method: "POST",
+      headers: { "X-Admin-Token": adminToken, "Content-Type": "application/json" },
+      body: JSON.stringify({ batchId, orders: parsed.orders }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Socialtickets konden niet worden aangemaakt.");
+
+    if (data.duplicate) {
+      socialTicketResult.textContent = "Deze batch is al verwerkt. Er zijn geen dubbele tickets aangemaakt en er zijn geen e-mails opnieuw verstuurd. Controleer de bestellingen hieronder.";
+      socialTicketResult.className = "admin-notice admin-notice-pending";
+    } else {
+      const failed = data.orders.filter((order) => order.emailError);
+      const failureSummary = failed.length
+        ? ` Mislukte e-mails: ${failed.map((order) => order.email).join(", ")}. Verstuur die opnieuw vanuit de bestellingenlijst.`
+        : " Alle ticketmails zijn verstuurd.";
+      socialTicketResult.textContent = `${data.totalTickets} tickets aangemaakt voor €25 per ticket.${failureSummary}`;
+      socialTicketResult.className = `admin-notice ${failed.length ? "admin-notice-error" : "admin-notice-success"}`;
+    }
+    sessionStorage.removeItem("socialTicketBatchId");
+    socialTicketList.value = "";
+    socialTicketPaid.checked = false;
+    await loadOrders();
+  } catch (err) {
+    socialTicketResult.textContent = err.message || "Er ging iets mis. Probeer dezelfde lijst opnieuw; een verwerkte batch wordt niet dubbel aangemaakt.";
+    socialTicketResult.className = "admin-notice admin-notice-error";
+    socialTicketSubmit.disabled = false;
+  } finally {
+    socialTicketSubmit.textContent = "Maak tickets en verstuur e-mails";
+  }
+});
 
 function renderStats(stats) {
   if (!stats) return;
