@@ -24,7 +24,7 @@ const {
 const SALES_CLOSED = true;
 const SALES_CLOSED_MESSAGE = "UITVERKOCHT!!! Helaas je bent te laat, maar niet getreurd we zijn iets aan t koken...";
 const SOCIAL_BATCH_TICKET_CAPACITY = 34;
-const SOCIAL_TICKET_CAPACITY = 35;
+const SOCIAL_TICKET_CAPACITY = 43;
 
 const app = express();
 app.set("trust proxy", 1); // nodig achter Render's reverse proxy, anders werkt rate-limiting per IP niet goed
@@ -334,8 +334,8 @@ app.post("/api/admin/social-orders", adminLimiter, requireAdmin, async (req, res
   }
 
   const totalRequested = normalizedOrders.reduce((total, order) => total + order.quantity, 0);
-  if (totalRequested !== SOCIAL_BATCH_TICKET_CAPACITY && totalRequested !== 1) {
-    return res.status(400).json({ error: `Deze aanvraag moet precies 1 of ${SOCIAL_BATCH_TICKET_CAPACITY} betaalde tickets bevatten.` });
+  if (totalRequested < 1 || totalRequested > SOCIAL_BATCH_TICKET_CAPACITY) {
+    return res.status(400).json({ error: `Deze aanvraag moet tussen 1 en ${SOCIAL_BATCH_TICKET_CAPACITY} betaalde tickets bevatten.` });
   }
   const batchSignature = crypto.createHash("sha256").update(JSON.stringify(normalizedOrders)).digest("hex");
   const tier = { id: "social25", label: "Social ticket", priceCents: 2500 };
