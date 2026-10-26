@@ -305,6 +305,92 @@ app.post("/api/admin/complimentary", adminLimiter, requireAdmin, async (req, res
   }
 });
 
+app.post("/api/admin/test-ticket", adminLimiter, requireAdmin, async (req, res) => {
+  const email = typeof req.body.email === "string" ? req.body.email.trim() : "";
+  const requestId = req.body.requestId;
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return res.status(400).json({ error: "Geldig e-mailadres is verplicht." });
+  }
+  if (typeof requestId !== "string" || !/^[0-9a-f-]{36}$/i.test(requestId)) {
+    return res.status(400).json({ error: "Ongeldig aanvraagnummer." });
+  }
+
+  const tier = { id: "test-ticket", label: "Testticket (niet gebruiken)", priceCents: 0 };
+  const result = await transact(async (data) => {
+    let order = data.orders.find((item) => item.testTicketRequestId === requestId);
+    if (order && order.email.toLowerCase() !== email.toLowerCase()) {
+      return { error: "Dit aanvraagnummer hoort bij een ander e-mailadres." };
+    }
+    if (order?.emailSentAt) return { alreadySent: true, email: order.email, orderId: order.id };
+    if (order?.emailSendingAt && Date.now() - new Date(order.emailSendingAt).getTime() < 10 * 60 * 1000) {
+      return { error: "De testticketmail wordt al verwerkt." };
+    }
+
+    if (!order) {
+      const now = new Date().toISOString();
+      order = {
+        id: crypto.randomUUID(),
+        reference: generateReference(new Set(data.orders.map((item) => item.reference))),
+        name: "TESTTICKET - NIET GEBRUIKEN",
+        email,
+        quantity: 1,
+        tierId: tier.id,
+        tierLabel: tier.label,
+        priceCents: 0,
+        amountCents: 0,
+        status: "paid",
+        complimentary: true,
+        source: "test",
+        testTicketRequestId: requestId,
+        createdAt: now,
+        confirmedAt: now,
+      };
+      const ticket = {
+        code: generateTicketCode(),
+        orderId: order.id,
+        tierId: tier.id,
+        status: "paid",
+        createdAt: now,
+        usedAt: null,
+      };
+      data.orders.push(order);
+      data.tickets.push(ticket);
+    }
+
+    order.emailSendingAt = new Date().toISOString();
+    return { orderId: order.id, email: order.email, tickets: data.tickets.filter((ticket) => ticket.orderId === order.id) };
+  });
+
+  if (result.error) return res.status(409).json({ error: result.error });
+  if (result.alreadySent) return res.json({ ok: true, alreadySent: true, email: result.email, orderId: result.orderId });
+  if (result.tickets.length !== 1) return res.status(409).json({ error: "Testticket ontbreekt in de administratie." });
+
+  try {
+    await sendTicketsEmail({ to: result.email, name: "TESTTICKET - NIET GEBRUIKEN", tier, tickets: result.tickets, orderId: result.orderId });
+  } catch (err) {
+    console.error(`Fout bij versturen testticket naar ${result.email}:`, err);
+    const emailError = err.message || "Testticketmail versturen is mislukt.";
+    await transact(async (data) => {
+      const order = data.orders.find((item) => item.id === result.orderId);
+      if (order) {
+        delete order.emailSendingAt;
+        order.emailError = emailError;
+      }
+    });
+    return res.status(502).json({ error: emailError, orderId: result.orderId });
+  }
+
+  await transact(async (data) => {
+    const order = data.orders.find((item) => item.id === result.orderId);
+    if (order) {
+      order.emailSentAt = new Date().toISOString();
+      delete order.emailSendingAt;
+      delete order.emailError;
+    }
+  });
+  res.json({ ok: true, email: result.email, orderId: result.orderId });
+});
+
 app.post("/api/admin/social-orders", adminLimiter, requireAdmin, async (req, res) => {
   const { batchId, orders: requestedOrders } = req.body;
   if (typeof batchId !== "string" || !/^[0-9a-f-]{36}$/i.test(batchId)) {
@@ -563,7 +649,7 @@ app.post("/api/admin/orders/:id/resend-email", adminLimiter, requireAdmin, async
   if (tickets.length === 0) return res.status(404).json({ error: "Geen tickets gevonden voor deze bestelling." });
 
   const tierMeta = require("./pricing").TIERS.find((t) => t.id === order.tierId)
-    || (order.source === "social" ? { label: order.tierLabel, priceCents: order.priceCents } : null);
+    || (["social", "test"].includes(order.source) ? { label: order.tierLabel, priceCents: order.priceCents } : null);
   if (!tierMeta) return res.status(409).json({ error: "Ticketprijs niet gevonden voor deze bestelling." });
   try {
     await sendTicketsEmail({
