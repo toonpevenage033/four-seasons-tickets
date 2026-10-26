@@ -10,7 +10,7 @@
 <body>
   <main class="scan-wrap">
     <h1>Ticket scanner</h1>
-    <p>Voer eenmalig de staff-toegangscode in en scan daarna de QR-code van de bezoeker.</p>
+    <p>Voer eenmalig de staff-toegangscode in. Scan daarna de QR-code of typ de ticketcode die erboven staat.</p>
 
     <form id="token-form" class="order-form">
       <label>
@@ -21,9 +21,21 @@
       <p id="token-error" class="error" hidden>Ongeldige toegangscode.</p>
     </form>
 
-    <div id="reader" hidden></div>
+    <div id="scan-controls" hidden>
+      <div id="reader"></div>
+      <p id="camera-error" class="error" role="status" hidden></p>
+
+      <form id="manual-form" class="manual-code-form">
+        <label for="manual-code">Ticketcode handmatig invoeren</label>
+        <div class="manual-code-row">
+          <input id="manual-code" name="code" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" required />
+          <button type="submit">Controleer</button>
+        </div>
+        <p class="manual-code-hint">Hoofdletters en kleine letters tellen mee.</p>
+      </form>
+    </div>
     <div id="result" class="result-banner" hidden></div>
-    <button id="next-btn" class="next-btn" hidden>Volgende bezoeker →</button>
+    <button id="next-btn" class="next-btn" hidden>Volgende bezoeker</button>
   </main>
 
   <script src="scan.js"></script>
