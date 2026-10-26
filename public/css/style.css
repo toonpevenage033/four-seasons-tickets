@@ -273,6 +273,22 @@ a {
   max-width: 100%;
 }
 
+.scanner-audio-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  min-height: 36px;
+  margin: 8px 0;
+  color: #fff;
+  font-size: 14px;
+}
+
+.scanner-audio-row .secondary-btn {
+  margin: 0;
+}
+
 .manual-code-form {
   margin: 20px 0 0;
   padding: 16px;

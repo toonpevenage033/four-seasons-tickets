@@ -5,10 +5,65 @@ const manualForm = document.getElementById("manual-form");
 const manualCodeInput = document.getElementById("manual-code");
 const resultEl = document.getElementById("result");
 const nextBtn = document.getElementById("next-btn");
+const audioStatus = document.getElementById("audio-status");
+const audioEnableBtn = document.getElementById("audio-enable");
 
 let staffToken = sessionStorage.getItem("staffToken") || "";
 let scanner = null;
+let audioContext = null;
 let awaitingNext = false;
+
+async function enableAudio() {
+  const AudioContextConstructor = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContextConstructor) {
+    audioStatus.textContent = "Geluid niet beschikbaar; controleer ook de melding op het scherm.";
+    audioEnableBtn.hidden = true;
+    return false;
+  }
+
+  try {
+    audioContext ||= new AudioContextConstructor();
+    if (audioContext.state !== "running") await audioContext.resume();
+    const enabled = audioContext.state === "running";
+    audioStatus.textContent = enabled ? "Geluid aan" : "Tik op Geluid aanzetten voor geluid.";
+    audioEnableBtn.hidden = enabled;
+    return enabled;
+  } catch (err) {
+    audioStatus.textContent = "Tik op Geluid aanzetten voor geluid.";
+    audioEnableBtn.hidden = false;
+    return false;
+  }
+}
+
+function playFeedbackSound(valid) {
+  if (!audioContext || audioContext.state !== "running") return;
+
+  const start = audioContext.currentTime;
+  const tones = valid
+    ? [
+        { frequency: 660, offset: 0, duration: 0.14, type: "sine" },
+        { frequency: 880, offset: 0.12, duration: 0.2, type: "sine" },
+      ]
+    : [
+        { frequency: 190, offset: 0, duration: 0.18, type: "sawtooth" },
+        { frequency: 135, offset: 0.22, duration: 0.22, type: "sawtooth" },
+      ];
+
+  for (const tone of tones) {
+    const oscillator = audioContext.createOscillator();
+    const gain = audioContext.createGain();
+    const toneStart = start + tone.offset;
+    oscillator.type = tone.type;
+    oscillator.frequency.setValueAtTime(tone.frequency, toneStart);
+    gain.gain.setValueAtTime(0.0001, toneStart);
+    gain.gain.exponentialRampToValueAtTime(valid ? 0.16 : 0.11, toneStart + 0.015);
+    gain.gain.exponentialRampToValueAtTime(0.0001, toneStart + tone.duration);
+    oscillator.connect(gain);
+    gain.connect(audioContext.destination);
+    oscillator.start(toneStart);
+    oscillator.stop(toneStart + tone.duration);
+  }
+}
 
 function showResult(valid, message, extra) {
   resultEl.hidden = false;
@@ -47,8 +102,10 @@ async function verifyTicket(code) {
       ? [data.name, data.tier].filter(Boolean).join(" · ")
       : "";
     showResult(data.valid, data.message || "Ticket kon niet worden gecontroleerd.", extra);
+    playFeedbackSound(data.valid);
   } catch (err) {
     showResult(false, "Kon niet verifiëren, controleer verbinding.");
+    playFeedbackSound(false);
   }
 }
 
@@ -83,6 +140,8 @@ nextBtn.addEventListener("click", () => {
   manualCodeInput.focus();
 });
 
+audioEnableBtn.addEventListener("click", enableAudio);
+
 async function checkToken(token) {
   try {
     const res = await fetch("/api/staff/ping", { headers: { "X-Staff-Token": token } });
@@ -94,6 +153,7 @@ async function checkToken(token) {
 
 tokenForm.addEventListener("submit", async (e) => {
   e.preventDefault();
+  const audioReady = enableAudio();
   const tokenError = document.getElementById("token-error");
   const submitBtn = tokenForm.querySelector("button");
   submitBtn.disabled = true;
@@ -110,13 +170,15 @@ tokenForm.addEventListener("submit", async (e) => {
   staffToken = candidate;
   sessionStorage.setItem("staffToken", staffToken);
   tokenForm.hidden = true;
+  await audioReady;
   await startScanner();
 });
 
 if (staffToken) {
-  checkToken(staffToken).then((ok) => {
+  checkToken(staffToken).then(async (ok) => {
     if (ok) {
       tokenForm.hidden = true;
+      await enableAudio();
       startScanner();
     } else {
       sessionStorage.removeItem("staffToken");
