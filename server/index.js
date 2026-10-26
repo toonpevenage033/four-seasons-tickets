@@ -24,7 +24,7 @@ const {
 const SALES_CLOSED = true;
 const SALES_CLOSED_MESSAGE = "UITVERKOCHT!!! Helaas je bent te laat, maar niet getreurd we zijn iets aan t koken...";
 const SOCIAL_BATCH_TICKET_CAPACITY = 34;
-const SOCIAL_TICKET_CAPACITY = 44;
+const SOCIAL_TICKET_CAPACITY = 45;
 
 const app = express();
 app.set("trust proxy", 1); // nodig achter Render's reverse proxy, anders werkt rate-limiting per IP niet goed
