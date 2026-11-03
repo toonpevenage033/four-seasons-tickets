@@ -1,81 +1,72 @@
-# Four Seasons Feest — Ticketverkoop
+# KOORTS-EVENTS — Website
 
-Simpele ticketwebsite zonder betaal-API of KVK nodig: kopers reserveren tickets, maken
-het bedrag zelf over via een bankoverschrijving met unieke referentie, en jij bevestigt
-de betaling handmatig in een beveiligde beheerpagina. Zodra je bevestigt, ontvangt de
-koper automatisch een e-mail (via Resend) met een unieke QR-code per ticket. Bij de
-ingang scan je de QR-code met de scanner-pagina om te controleren of een ticket geldig
-en nog niet gebruikt is.
+De officiële website van KOORTS-EVENTS: een statische website (alleen HTML, CSS en
+JavaScript — geen server of database nodig) met info over het bedrijf, aankomende
+evenementen, een fotogalerij van vorige feesten en contactgegevens.
 
-- Max. **450 tickets** in totaal (hard limiet, ook onder gelijktijdige bestellingen).
-- Automatische prijsfases:
-  - **Early Bird** — €10,50 — vanaf 24 sept 2026 15:00 t/m 30 sept 2026
-  - **Regular** — €14,50 — vanaf 1 okt 2026 t/m 23 okt 2026
-  - **Late Bird** — €17,50 — vanaf 24 okt 2026 t/m avond van het feest (of uitverkocht)
-- Locatie: Four Seasons, Kastanjelaan 1, Leusden. Datum: 31 oktober 2026, 21:00–02:00.
+## Pagina's
 
-## 1. Installatie
+| Pagina | Bestand | Inhoud |
+|---|---|---|
+| Home | `index.html` | Groot logo, intro en highlights |
+| Evenementen | `evenementen.html` | Aankomende feesten ("tickets binnenkort") |
+| Foto's | `fotos.html` | Galerij van vorige feesten, met lightbox |
+| Over ons | `over-ons.html` | Bedrijfsverhaal + officiële bedrijfsgegevens (KVK) |
+| Contact | `contact.html` | E-mail en socials |
 
-```bash
-cd fourseasons-tickets
-npm install
-cp .env.example .env
-```
+## Lokaal bekijken
 
-Vul in `.env` in:
-- `RESEND_API_KEY` — API key uit [Resend](https://resend.com), en een geverifieerd `EMAIL_FROM`-domein.
-- `PAYMENT_IBAN` en `PAYMENT_ACCOUNT_HOLDER` — het rekeningnummer waar kopers naartoe moeten overmaken.
-- `ADMIN_TOKEN` — geheime code voor jou/organisatoren, om op `/admin` betalingen te bevestigen.
-- `STAFF_TOKEN` — geheime code voor het deurpersoneel, om op `/scan` tickets te scannen.
-- `BASE_URL` — de publieke URL van je site zodra die live staat.
-
-Houd `ADMIN_TOKEN` en `STAFF_TOKEN` gescheiden en geef `ADMIN_TOKEN` alleen aan mensen die
-je vertrouwt: wie deze code heeft, kan (gratis) tickets aanmaken.
-
-## 2. Lokaal testen
+Open gewoon `index.html` in je browser, of start een mini-server:
 
 ```bash
-npm start
+python3 -m http.server 8000
 ```
 
-Ga naar:
-- `http://localhost:3000` — de ticketpagina voor kopers
-- `http://localhost:3000/admin` — beheerpagina om betalingen te bevestigen/afwijzen
-- `http://localhost:3000/scan` — scanner-pagina voor bij de deur
+en ga naar `http://localhost:8000`.
 
-## 3. Live zetten (gratis/goedkope opties)
+## Foto's toevoegen
 
-Dit is een gewone Node.js/Express app, dus je kunt hem gratis of goedkoop hosten op bijvoorbeeld:
-- **Render.com** (gratis web service tier)
-- **Railway.app**
-- Elke goedkope VPS met Node.js
+1. Zet je foto's in de map `images/galerij/`.
+2. Open `fotos.html` en voeg de bestandsnamen toe aan de `window.GALERIJ`-lijst onderaan:
 
-Zet daar dezelfde environment variables uit `.env`, en zorg voor **persistente opslag** voor
-de map `data/` (zie punt 5 hieronder) zodat bestellingen niet verloren gaan bij een herstart.
+```js
+window.GALERIJ = [
+  { file: "halloween-2026-01.jpg", caption: "Four Seasons Halloween 2026" },
+  "halloween-2026-02.jpg", // zonder bijschrift kan ook
+];
+```
 
-## 4. Hoe het werkt
+Tip: verklein grote foto's tot max. ±1920px breed zodat de pagina snel laadt.
 
-1. Bezoeker vult naam, e-mail en aantal tickets in op de hoofdpagina.
-2. Server checkt of er nog genoeg tickets over zijn (max. 450) en maakt een reservering aan
-   met een unieke referentiecode. De koper krijgt direct op de pagina én per e-mail te zien
-   waar en met welke omschrijving hij moet overmaken.
-3. Jij checkt je bankrekening en gaat naar `/admin`. Bestellingen met de bijpassende
-   referentie en het juiste bedrag klik je op **"Bevestig betaling"**.
-4. Zodra je bevestigt, genereert de server per ticket een unieke, niet te raden code + QR-
-   afbeelding, en mailt deze naar de koper via Resend.
-5. Bij de deur open je `/scan`, voert eenmalig de staff-code in, en scant QR-codes. Elke
-   code kan maar **één keer** geldig gescand worden.
-6. Reserveringen die na 48 uur nog niet bevestigd zijn tellen niet langer mee voor de
-   limiet van 450, zodat "vergeten" bestellingen geen plekken blijven blokkeren. Je kunt
-   een bestelling ook zelf **afwijzen** in `/admin` als iemand toch niet betaalt.
+## KVK-gegevens invullen
 
-## 5. Belangrijk om te weten
+Zodra de registratie rond is: open `over-ons.html` en vervang in het blok
+"Officiële bedrijfsgegevens" de placeholders (KVK-nummer, BTW-nummer,
+vestigingsadres) door de echte gegevens.
 
-- Data (bestellingen + tickets) wordt lokaal opgeslagen in `data/db.json`. Maak hier
-  back-ups van als je dit op een server zonder persistente schijf host (bv. sommige
-  serverless platforms wissen dit bestand bij elke deploy — kies in dat geval
-  Render/Railway/VPS met persistente opslag/disk).
-- Zet de omgevingsvariabele `TZ=Europe/Amsterdam` zodat de prijsfases op het juiste
-  moment wisselen.
-- Controleer bij het bevestigen van een betaling altijd of het **bedrag én de referentie**
-  overeenkomen met wat in `/admin` staat, om fouten te voorkomen.
+## Eigen logo gebruiken
+
+Op de homepage staat nu een typografisch logo. Heb je een logo-afbeelding?
+Zet die als `images/logo.png` in de repo en vervang in `index.html` de
+`<h1 class="hero-logo">…</h1>` door:
+
+```html
+<img class="hero-logo-img" src="images/logo.png" alt="KOORTS-EVENTS">
+```
+
+## Nieuw evenement toevoegen
+
+Open `evenementen.html`, kopieer het bovenste `<article class="event-card">`-blok
+en pas datum, titel en omschrijving aan. Zodra er een ticketlink is, vervang je de
+"Tickets binnenkort"-badge door een knop:
+
+```html
+<a href="https://link-naar-ticketshop" class="btn btn-primary">Koop tickets</a>
+```
+
+## Hosting (gratis)
+
+Omdat de site volledig statisch is kan hij gratis gehost worden:
+
+- **GitHub Pages**: repo → Settings → Pages → Source: "Deploy from a branch" → branch `main`, map `/ (root)`.
+- **Render.com**: nieuw "Static Site" aanmaken, deze repo koppelen, publish directory `.` (geen build command nodig).

@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Foto's — KOORTS-EVENTS</title>
+  <meta name="description" content="Fotogalerij van vorige KOORTS-EVENTS feesten.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-inner">
+      <a href="index.html" class="logo-text"><span class="koorts">KOORTS</span><span class="events">-EVENTS</span></a>
+      <button class="hamburger" aria-label="Menu openen" aria-expanded="false" aria-controls="nav-menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </header>
+
+  <nav class="nav-menu" id="nav-menu">
+    <a href="index.html">Home</a>
+    <a href="evenementen.html">Evenementen</a>
+    <a href="fotos.html">Foto's</a>
+    <a href="over-ons.html">Over ons</a>
+    <a href="contact.html">Contact</a>
+  </nav>
+  <div class="nav-overlay"></div>
+
+  <main>
+    <section class="section page-head">
+      <div class="container">
+        <h1 class="section-title">Foto's van <span class="mark">vorige feesten</span></h1>
+        <p class="section-intro">Een sfeerimpressie van onze vorige edities. Klik op een foto om hem groot te bekijken.</p>
+      </div>
+    </section>
+
+    <section class="section" style="padding-top: 0;">
+      <div class="container">
+        <div class="gallery-grid" data-gallery></div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <span>© 2026 KOORTS-EVENTS — Alle rechten voorbehouden</span>
+      <nav class="footer-nav">
+        <a href="evenementen.html">Evenementen</a>
+        <a href="fotos.html">Foto's</a>
+        <a href="over-ons.html">Over ons</a>
+        <a href="contact.html">Contact</a>
+      </nav>
+    </div>
+  </footer>
+
+  <script>
+    // FOTO'S TOEVOEGEN:
+    // 1. Zet je foto's in de map images/galerij/
+    // 2. Voeg hieronder per foto de bestandsnaam toe, met optioneel een bijschrift.
+    // Voorbeeld:
+    // window.GALERIJ = [
+    //   { file: "halloween-2026-01.jpg", caption: "Four Seasons Halloween 2026" },
+    //   "halloween-2026-02.jpg",
+    // ];
+    window.GALERIJ = [];
+  </script>
+  <script src="js/main.js"></script>
+</body>
+</html>
