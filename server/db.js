@@ -59,5 +59,13 @@ export async function migrate(db) {
       else await tx.query(sql);
       await tx.query("INSERT INTO schema_migrations(version) VALUES(1)");
     }
+    const { rows: manualTickets } = await tx.query("SELECT version FROM schema_migrations WHERE version=2");
+    if (!manualTickets.length) {
+      await tx.query(
+        `ALTER TABLE orders ADD COLUMN manual_test boolean NOT NULL DEFAULT false
+         CHECK (NOT manual_test OR (is_test AND payment_id IS NULL AND paid_at IS NULL))`
+      );
+      await tx.query("INSERT INTO schema_migrations(version) VALUES(2)");
+    }
   });
 }

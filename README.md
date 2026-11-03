@@ -72,7 +72,12 @@ niet voldoende: de API moet draaien.
 5. Mailstatus **preview** betekent dat er niets is gemaild.
 6. Maak in beheer een account voor elke beveiliger. Accounts kunnen worden
    geblokkeerd; bestaande sessies worden dan direct ingetrokken.
-7. Laat de native scanner de tickets lezen. Een nieuw scanverzoek voor hetzelfde
+7. Zonder betaalprovider: kies in beheer **QR-testtickets zonder betaling**,
+   selecteer het privé-testevenement en het aantal (1–10). De persoonlijke
+   ticketpagina opent direct. Geen naam, e-mail, Mollie-sleutel of Shell nodig.
+   Deze route is alleen voor beheerders in testmodus, telt mee voor de capaciteit,
+   verstuurt geen mail en kan geen tickets voor live-evenementen uitgeven.
+8. Laat de native scanner de tickets lezen. Een nieuw scanverzoek voor hetzelfde
    ticket toont al gebruikt. Een netwerkretry met dezelfde requestId herhaalt het
    oorspronkelijke resultaat zonder een tweede check-in.
 
@@ -104,8 +109,12 @@ Zonder Mollie-account kun je eerst `PAYMENT_PROVIDER=disabled`,
 `PAYMENT_MODE=test`, `LIVE_SALES_ENABLED=false` en `MAIL_PROVIDER=preview`
 gebruiken met PostgreSQL en een HTTPS BASE_URL. Inloggen, beheer en scannen
 blijven beschikbaar, maar nieuwe bestellingen en betaalmeldingen worden expliciet
-geweigerd. Er worden geen testtickets uitgegeven totdat een betaalprovider is
-aangesloten. Een Mollie-sleutel is in deze modus niet nodig.
+geweigerd. Beheerders kunnen via **QR-testtickets zonder betaling** wel privé-
+scannertickets uitgeven. Ze worden apart gemarkeerd als `manual_test`, krijgen
+geen betaaldatum, betaal-ID of mailjob en worden nooit naar een betaalprovider
+gestuurd. Intern gebruiken ze de bestaande scanbare orderstatus `paid`; de
+ticketpagina en het beheeroverzicht tonen expliciet **zonder betaling**, niet
+**betaling bevestigd**. Een Mollie-sleutel is in deze modus niet nodig.
 
 Zet op een publiek bereikbare HTTPS-testbackend:
 

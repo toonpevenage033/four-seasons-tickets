@@ -25,6 +25,15 @@
         <div id="admin-events" class="card-grid"></div>
       </section>
       <div class="card-grid">
+        <section class="panel" id="manual-test-panel" hidden>
+          <h2>QR-testtickets zonder betaling</h2>
+          <p>Alleen oefenen met privé-testevenementen. Geen betaling en geen e-mail. De QR-codes openen direct na aanmaken.</p>
+          <form id="manual-test-form" class="form-stack">
+            <label>Testevenement<select name="eventId" id="manual-test-event" required></select></label>
+            <label>Aantal testtickets<input name="quantity" type="number" min="1" max="10" value="2" required></label>
+            <button type="submit" class="btn btn-primary">QR-testtickets maken zonder betaling</button>
+          </form>
+        </section>
         <section class="panel">
           <h2>Evenement aanmaken</h2>
           <p>Nieuwe evenementen starten als concept. Testevenementen blijven privé.</p>

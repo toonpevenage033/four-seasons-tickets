@@ -114,6 +114,79 @@ test("hosted disabled payments permits login and scanning without creating reser
   }), /Live verkoop/);
 });
 
+  test("private manual test tickets need no provider, issue exactly N and scan once", async () => {
+    const { createService } = await import("../server/service.js");
+    const forbiddenProvider = { create: () => { throw new Error("Provider must not be used"); }, get: () => { throw new Error("Provider must not be used"); } };
+    const manual = createService(db, { ...config, PAYMENT_PROVIDER: "disabled" }, forbiddenProvider, {
+      send: () => { throw new Error("No mail for manual test tickets"); }
+    });
+    const input = purchase(2);
+    const [first, retry] = await Promise.all([manual.manualTestTickets(input), manual.manualTestTickets(input)]);
+    assert.equal(first.orderUrl, retry.orderUrl);
+    const access = first.orderUrl.split("#")[1];
+    const order = await manual.orderStatus(access);
+    assert.equal(order.manualTest, true);
+    assert.equal(order.isTest, true);
+    assert.equal(order.tickets.length, 2);
+    assert.equal(order.mailStatus, "not_queued");
+    const { rows: [stored] } = await db.query("SELECT * FROM orders");
+    assert.equal(stored.payment_id, null);
+    assert.equal(stored.paid_at, null);
+    assert.equal((await db.query("SELECT * FROM mail_jobs")).rows.length, 0);
+    await manual.tick();
+    // Switching provider later must not create a payment or mail for this order.
+    await createService(db, config, forbiddenProvider, { send: forbiddenProvider.create }).tick();
+    const scanInput = { eventId, code: order.tickets[0].code, requestId: uuid() };
+    assert.equal((await manual.scan({ id: staffId }, scanInput)).status, "valid");
+    assert.equal((await manual.scan({ id: staffId }, { ...scanInput, requestId: uuid() })).status, "already_used");
+    await assert.rejects(manual.manualTestTickets({ ...input, quantity: 1 }), { code: "REQUEST_CONFLICT" });
+    await assert.rejects(service.checkout(input, true), { code: "REQUEST_CONFLICT" });
+  });
+
+  test("manual test route is admin-only, rejects live events and enforces stock", async () => {
+    const input = { eventId, quantity: 2, requestId: uuid() };
+    const path = "/api/admin/test-tickets";
+    assert.equal((await request(path, { method: "POST", body: input })).status, 401);
+    assert.equal((await request(path, { method: "POST", bearer: staffToken, body: input })).status, 401);
+    assert.equal((await request(path, { method: "POST", cookie: adminCookie, body: { ...input, quantity: 0 } })).status, 400);
+    const created = await request(path, { method: "POST", cookie: adminCookie, body: input });
+    assert.equal(created.status, 201);
+    const access = created.data.orderUrl.split("#")[1];
+    const result = await request("/api/order", { headers: { "X-Order-Token": access } });
+    assert.equal(result.data.manualTest, true);
+    assert.equal(result.data.tickets.length, 2);
+    assert.match(result.data.tickets[0].qrDataUrl, /^data:image\/png;base64,/);
+    const orderId = (await db.query("SELECT id FROM orders")).rows[0].id;
+    assert.equal((await request(`/api/admin/orders/${orderId}/retry-mail`, { method: "POST", cookie: adminCookie })).status, 409);
+    const results = await Promise.all([
+      request(path, { method: "POST", cookie: adminCookie, body: { ...input, quantity: 3, requestId: uuid() } }),
+      request(path, { method: "POST", cookie: adminCookie, body: { ...input, quantity: 3, requestId: uuid() } })
+    ]);
+    assert.deepEqual(results.map(r => r.status).sort(), [201, 409]);
+    assert.equal((await db.query("SELECT * FROM tickets")).rows.length, 5);
+    assert.deepEqual((await request("/api/events")).data.events, []);
+    await db.query("UPDATE events SET is_test=false WHERE id=$1", [eventId]);
+    assert.equal((await request(path, { method: "POST", cookie: adminCookie, body: { ...input, requestId: uuid() } })).status, 403);
+  });
+
+  test("manual test tickets are refused in live mode without creating orders", async () => {
+    const { createService } = await import("../server/service.js");
+    const live = createService(db, { ...config, PAYMENT_MODE: "live", LIVE_SALES_ENABLED: true }, payments, createMailer(config));
+    await assert.rejects(live.manualTestTickets(purchase()), { code: "TEST_ONLY" });
+    assert.equal((await db.query("SELECT * FROM orders")).rows.length, 0);
+  });
+test("manual ticket migration preserves existing paid orders and is repeatable", async () => {
+  const order = await paidOrder(2);
+  await db.query("ALTER TABLE orders DROP COLUMN manual_test");
+  await db.query("DELETE FROM schema_migrations WHERE version=2");
+  await migrate(db);
+  await migrate(db);
+  const existing = await service.orderStatus(order.access);
+  assert.equal(existing.manualTest, false);
+  assert.equal(existing.status, "paid");
+  assert.equal(existing.tickets.length, 2);
+});
+
 test("test event is private across listing, checkout, publication and static files", async () => {
   assert.deepEqual((await request("/api/events")).data.events, []);
   assert.equal((await request("/api/orders", { method: "POST", body: purchase() })).status, 403);

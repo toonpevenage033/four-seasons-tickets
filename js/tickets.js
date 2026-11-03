@@ -98,9 +98,13 @@ async function orderPage() {
         failed: "De betaling is mislukt.", canceled: "De betaling is geannuleerd.", expired: "De betaling is verlopen.",
         refunded: "Deze bestelling is terugbetaald of teruggedraaid. De tickets zijn niet geldig.", chargeback: "Deze betaling is teruggedraaid. De tickets zijn niet geldig."
       };
-      statusElement.textContent = `${order.isTest ? "TEST — " : ""}${labels[order.status] || "Onbekende betaalstatus."}`;
+      statusElement.textContent = order.manualTest
+        ? "TEST — QR-testtickets zonder betaling. Alleen geldig voor dit privé-testevenement."
+        : `${order.isTest ? "TEST — " : ""}${labels[order.status] || "Onbekende betaalstatus."}`;
       const details = document.querySelector("#order-details");
-      details.replaceChildren(text("h2", order.event.title), text("p", `${order.quantity} ticket(s) · ${euro(order.amountCents)}`));
+      details.replaceChildren(text("h2", order.event.title), text("p", order.manualTest
+        ? `${order.quantity} testticket(s) · Geen betaling · Geen e-mail`
+        : `${order.quantity} ticket(s) · ${euro(order.amountCents)}`));
       if (order.mailStatus === "preview") details.append(text("p", "Lokale preview: er is geen e-mail verstuurd.", "notice"));
       if (order.mailStatus === "pending") details.append(text("p", "Je ticketmail wordt verwerkt. Je tickets zijn hieronder al beschikbaar."));
       container.replaceChildren(...order.tickets.map((ticket, i) => {

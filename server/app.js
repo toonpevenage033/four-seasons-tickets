@@ -173,9 +173,15 @@ export function createApp({ db, config, payments, mailer }) {
     if (!event?.is_test) throw new HttpError(403, "NOT_TEST_EVENT", "Deze route is uitsluitend voor testevenementen.");
     res.status(201).json(await service.checkout(input, true));
   });
+  app.post("/api/admin/test-tickets", purchaseLimit, async (req, res) => {
+    const input = parse(checkoutInput.pick({ eventId: true, requestId: true, quantity: true }), req.body);
+    res.status(201).json(await service.manualTestTickets({
+      ...input, name: "QR-scannertest", email: "scanner-test@example.invalid"
+    }));
+  });
   app.get("/api/admin/orders", async (_req, res) => {
     const { rows } = await db.query(
-      `SELECT o.id,o.buyer_name AS name,o.quantity,o.status,o.is_test AS "isTest",e.title,
+      `SELECT o.id,o.buyer_name AS name,o.quantity,o.status,o.is_test AS "isTest",o.manual_test AS "manualTest",e.title,
        m.status AS "mailStatus",m.last_error AS "mailError",o.created_at AS "createdAt"
        FROM orders o JOIN events e ON e.id=o.event_id LEFT JOIN mail_jobs m ON m.order_id=o.id
        ORDER BY o.created_at DESC LIMIT 100`

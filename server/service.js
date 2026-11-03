@@ -39,17 +39,23 @@ export function createService(db, config, payments, mailer) {
     return existing;
   }
 
-  async function checkout(input, isAdmin = false) {
-    if (config.PAYMENT_PROVIDER === "disabled") {
-      fail(503, "PAYMENTS_DISABLED", "Betalingen zijn nog niet aangesloten. Er is geen bestelling aangemaakt.");
+  async function issueTickets(tx, order) {
+    for (let i = 0; i < order.quantity; i++) {
+      await tx.query("INSERT INTO tickets(id,order_id,event_id,code) VALUES($1,$2,$3,$4)", [uuid(), order.id, order.event_id, token()]);
     }
+  }
+
+  async function reserveOrder(input, isAdmin, manualTest = false) {
     const inputHash = hash(JSON.stringify([input.eventId, input.name, input.email, input.quantity]));
-    const order = await db.transaction(async tx => {
+    return db.transaction(async tx => {
       const { rows: [event] } = await tx.query("SELECT * FROM events WHERE id=$1 FOR UPDATE", [input.eventId]);
       if (!event) fail(404, "EVENT_NOT_FOUND", "Evenement niet gevonden.");
+      if (manualTest && (!isAdmin || !event.is_test || event.published || config.PAYMENT_MODE !== "test" || config.LIVE_SALES_ENABLED)) {
+        fail(403, "TEST_ONLY", "QR-testtickets zonder betaling zijn alleen toegestaan bij privé-testevenementen in testmodus.");
+      }
       const { rows: [existing] } = await tx.query("SELECT * FROM orders WHERE request_id=$1", [input.requestId]);
       if (existing) {
-        if (existing.input_hash !== inputHash) fail(409, "REQUEST_CONFLICT", "Deze aanvraagcode hoort bij een andere bestelling.");
+        if (existing.input_hash !== inputHash || existing.manual_test !== manualTest) fail(409, "REQUEST_CONFLICT", "Deze aanvraagcode hoort bij een andere bestelling.");
         if (existing.is_test && !isAdmin) fail(403, "TEST_PRIVATE", "Testbestellingen zijn alleen beschikbaar via beheer.");
         return existing;
       }
@@ -64,13 +70,30 @@ export function createService(db, config, payments, mailer) {
       if (stock.reserved + input.quantity > event.capacity) fail(409, "SOLD_OUT", "Er zijn niet genoeg tickets beschikbaar.");
       const access = token();
       const { rows: [created] } = await tx.query(
-        `INSERT INTO orders(id,event_id,buyer_name,buyer_email,quantity,amount_cents,is_test,access_hash,access_token,request_id,input_hash)
-         VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *`,
+        `INSERT INTO orders(id,event_id,buyer_name,buyer_email,quantity,amount_cents,is_test,access_hash,access_token,request_id,input_hash,manual_test)
+         VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING *`,
         [uuid(), event.id, input.name, input.email, input.quantity, event.price_cents * input.quantity,
-          event.is_test, hash(access), access, input.requestId, inputHash]
+          event.is_test, hash(access), access, input.requestId, inputHash, manualTest]
       );
+      if (manualTest) {
+        await issueTickets(tx, created);
+        // "paid" is the existing redeemable state; manual_test distinguishes it from a payment.
+        await tx.query("UPDATE orders SET status='paid' WHERE id=$1", [created.id]);
+      }
       return created;
     });
+  }
+
+  async function manualTestTickets(input) {
+    const order = await reserveOrder(input, true, true);
+    return { orderUrl: `/bestelling.html#${order.access_token}`, isTest: true };
+  }
+
+  async function checkout(input, isAdmin = false) {
+    if (config.PAYMENT_PROVIDER === "disabled") {
+      fail(503, "PAYMENTS_DISABLED", "Betalingen zijn nog niet aangesloten. Er is geen bestelling aangemaakt.");
+    }
+    const order = await reserveOrder(input, isAdmin);
     try {
       const saved = await ensurePayment(order);
       return { checkoutUrl: saved.checkout_url, orderToken: saved.access_token, isTest: saved.is_test };
@@ -104,9 +127,7 @@ export function createService(db, config, payments, mailer) {
       if (payment.status === "paid" && order.status !== "paid") {
         if (order.status !== "pending") throw new Error(`Onverwachte late betaling voor ${order.id}; handmatige controle nodig.`);
         await tx.query("UPDATE orders SET status='paid',paid_at=now(),next_payment_check_at=now()+interval '5 minutes' WHERE id=$1", [order.id]);
-        for (let i = 0; i < order.quantity; i++) {
-          await tx.query("INSERT INTO tickets(id,order_id,event_id,code) VALUES($1,$2,$3,$4)", [uuid(), order.id, order.event_id, token()]);
-        }
+        await issueTickets(tx, order);
         await tx.query("INSERT INTO mail_jobs(order_id) VALUES($1) ON CONFLICT DO NOTHING", [order.id]);
       } else if (order.status === "pending" && ["failed", "canceled", "expired"].includes(payment.status)) {
         await tx.query("UPDATE orders SET status=$2 WHERE id=$1", [order.id, payment.status]);
@@ -130,6 +151,7 @@ export function createService(db, config, payments, mailer) {
     return {
       status: order.status, event: eventView({ ...order, id: order.event_id }), quantity: order.quantity,
       amountCents: order.amount_cents, isTest: order.is_test,
+      manualTest: order.manual_test,
       mailStatus: order.mail_status || "not_queued", tickets: tickets.map(t => ({ code: t.code, scannedAt: t.scanned_at }))
     };
   }
@@ -202,7 +224,7 @@ export function createService(db, config, payments, mailer) {
 
   async function tick() {
     const { rows } = config.PAYMENT_PROVIDER === "disabled" ? { rows: [] } : await db.query(
-      `SELECT * FROM orders WHERE status IN ('pending','paid') AND next_payment_check_at<=now()
+      `SELECT * FROM orders WHERE status IN ('pending','paid') AND manual_test=false AND next_payment_check_at<=now()
        ORDER BY next_payment_check_at LIMIT 20`
     );
     for (const order of rows) {
@@ -219,5 +241,5 @@ export function createService(db, config, payments, mailer) {
     await db.query("DELETE FROM scan_requests WHERE created_at<now()-interval '7 days'");
   }
 
-  return { events, checkout, reconcile, orderStatus, scan, tick, processMail };
+  return { events, checkout, manualTestTickets, reconcile, orderStatus, scan, tick, processMail };
 }

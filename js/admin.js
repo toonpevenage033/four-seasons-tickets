@@ -59,11 +59,17 @@ async function refresh() {
   }));
   if ([...select.options].some(o => o.value === selected)) select.value = selected;
   document.querySelector("#test-order-form button").disabled = !select.options.length || session.paymentProvider === "disabled";
+  const manualSelect = document.querySelector("#manual-test-event");
+  const manualSelected = manualSelect.value;
+  manualSelect.replaceChildren(...[...select.options].map(option => option.cloneNode(true)));
+  if ([...manualSelect.options].some(o => o.value === manualSelected)) manualSelect.value = manualSelected;
+  document.querySelector("#manual-test-panel").hidden = session.paymentMode !== "test";
+  document.querySelector("#manual-test-form button").disabled = !manualSelect.options.length;
   document.querySelector("#admin-orders").replaceChildren(...orders.map(order => {
     const row = document.createElement("tr");
-    for (const value of [`${order.isTest ? "TEST — " : ""}${order.title}`, order.name, order.quantity, order.status, order.mailStatus || "Nog niet ingepland"]) row.append(node("td", value));
+    for (const value of [`${order.isTest ? "TEST — " : ""}${order.title}`, order.name, order.quantity, order.manualTest ? "TEST — zonder betaling" : order.status, order.manualTest ? "Geen mail (scannertest)" : order.mailStatus || "Nog niet ingepland"]) row.append(node("td", value));
     const cell = document.createElement("td");
-    if (order.status === "paid") cell.append(action("Mail opnieuw inplannen", () => api(`/orders/${order.id}/retry-mail`, { method: "POST" })));
+    if (order.status === "paid" && !order.manualTest) cell.append(action("Mail opnieuw inplannen", () => api(`/orders/${order.id}/retry-mail`, { method: "POST" })));
     if (order.mailError) cell.append(node("p", order.mailError));
     row.append(cell);
     return row;
@@ -96,6 +102,24 @@ handleForm("#event-form", async form => {
   }) });
   form.reset();
   await refresh();
+});
+let manualRequest;
+handleForm("#manual-test-form", async form => {
+  const values = { eventId: form.elements.eventId.value, quantity: Number(form.elements.quantity.value) };
+  const fingerprint = JSON.stringify(values);
+  if (!manualRequest) {
+    const saved = sessionStorage.getItem("koorts-manual-test");
+    if (saved) manualRequest = JSON.parse(saved);
+  }
+  if (manualRequest?.fingerprint !== fingerprint) {
+    manualRequest = { fingerprint, requestId: crypto.randomUUID() };
+    sessionStorage.setItem("koorts-manual-test", JSON.stringify(manualRequest));
+  }
+  const result = await api("/test-tickets", {
+    method: "POST", body: JSON.stringify({ ...values, requestId: manualRequest.requestId })
+  });
+  sessionStorage.removeItem("koorts-manual-test");
+  location.assign(result.orderUrl);
 });
 let pendingTestOrder;
 handleForm("#test-order-form", async form => {
