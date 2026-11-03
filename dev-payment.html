@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex,nofollow">
+  <meta name="referrer" content="no-referrer">
+  <title>Lokale testbetaling — KOORTS-EVENTS</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <main class="container section ticket-layout">
+    <h1 class="section-title">TEST — Geen echte betaling</h1>
+    <p>Deze lokale simulator verstuurt geen geld en geen e-mail. Dit is niet de Mollie-testomgeving.</p>
+    <p id="page-status" role="status">Testbetaling laden...</p>
+    <div id="dev-payment-actions" class="hero-actions" hidden>
+      <button type="button" class="btn btn-primary" data-payment-status="paid">Simuleer geslaagde betaling</button>
+      <button type="button" class="btn btn-outline" data-payment-status="canceled">Annuleren</button>
+      <button type="button" class="btn btn-outline" data-payment-status="failed">Mislukken</button>
+    </div>
+    <a id="dev-order-link" class="btn btn-outline" hidden>Bekijk bestelling</a>
+  </main>
+  <script src="js/tickets.js"></script>
+</body>
+</html>

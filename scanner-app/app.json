@@ -1,0 +1,29 @@
+{
+  "expo": {
+    "name": "KOORTS Scanner",
+    "slug": "koorts-private-scanner",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "icon": "./assets/pictogram.png",
+    "ios": {
+      "bundleIdentifier": "com.koortsevents.scanner",
+      "supportsTablet": true,
+      "config": { "usesNonExemptEncryption": false }
+    },
+    "android": {
+      "package": "com.koortsevents.scanner",
+      "permissions": ["android.permission.CAMERA"],
+      "blockedPermissions": ["android.permission.RECORD_AUDIO"]
+    },
+    "plugins": [
+      ["expo-camera", {
+        "cameraPermission": "Allow KOORTS Scanner to scan ticket QR codes.",
+        "recordAudioAndroid": false,
+        "microphonePermission": false
+      }],
+      "expo-secure-store"
+    ],
+    "splash": { "backgroundColor": "#f1ecdf", "image": "./assets/pictogram.png", "resizeMode": "contain" }
+  }
+}

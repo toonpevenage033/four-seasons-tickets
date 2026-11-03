@@ -1,1 +1,10 @@
 .DS_Store
+node_modules/
+.env
+.env.*
+!.env.example
+.local/
+coverage/
+scanner-app/.expo/
+scanner-app/dist/
+*.log

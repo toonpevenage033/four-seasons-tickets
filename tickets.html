@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="referrer" content="no-referrer">
+  <title>Tickets — KOORTS-EVENTS</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" type="image/png" href="images/Pictogram.png">
+</head>
+<body>
+  <header class="site-header"><div class="header-inner">
+    <a href="index.html" class="brand-link" aria-label="KOORTS-EVENTS — Home"><img class="brand-icon" src="images/Pictogram.png" alt="" width="800" height="800"><span>KOORTS-EVENTS</span></a>
+    <button class="hamburger" aria-label="Menu openen" aria-expanded="false" aria-controls="nav-menu"><span></span><span></span><span></span></button>
+  </div></header>
+  <nav class="nav-menu" id="nav-menu"><a href="index.html">Home</a><a href="evenementen.html">Evenementen</a><a href="fotos.html">Foto's</a><a href="over-ons.html">Over ons</a><a href="contact.html">Contact</a></nav>
+  <div class="nav-overlay"></div>
+  <main class="container section ticket-layout">
+    <h1 class="section-title">Jouw <span class="mark">tickets</span></h1>
+    <p id="page-status" role="status">Evenement laden...</p>
+    <div id="ticket-details" hidden></div>
+    <form id="checkout-form" class="panel form-stack" hidden>
+      <label>Naam<input name="name" autocomplete="name" minlength="2" maxlength="120" required></label>
+      <label>E-mailadres<input name="email" type="email" autocomplete="email" maxlength="254" required></label>
+      <label>Aantal tickets<input name="quantity" type="number" min="1" max="10" value="1" required></label>
+      <p id="checkout-total" class="price"></p>
+      <p>Je ontvangt je QR-tickets na bevestiging van je betaling. Vragen? <a href="mailto:koortsevents@gmail.com">Mail ons</a>.</p>
+      <p id="checkout-error" class="notice error" role="alert" hidden></p>
+      <button class="btn btn-primary" type="submit">Verder naar iDEAL</button>
+    </form>
+  </main>
+  <footer class="site-footer"><div class="footer-inner"><span>KOORTS-EVENTS</span><a href="contact.html">Contact</a></div></footer>
+  <script src="js/main.js"></script>
+  <script src="js/tickets.js"></script>
+</body>
+</html>

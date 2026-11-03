@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex,nofollow">
+  <title>Beheer — KOORTS-EVENTS</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" type="image/png" href="images/Pictogram.png">
+</head>
+<body>
+  <header class="site-header"><div class="header-inner"><a href="index.html" class="brand-link"><img class="brand-icon" src="images/Pictogram.png" alt="" width="800" height="800"><span>KOORTS-EVENTS</span></a><span>Beheer</span></div></header>
+  <main class="container section">
+    <h1 class="section-title">Evenementen <span class="mark">beheren</span></h1>
+    <p id="admin-status" class="notice" role="status">Sessie controleren...</p>
+    <form id="admin-login" class="panel form-stack ticket-layout" hidden>
+      <label>Gebruikersnaam<input name="username" autocomplete="username" required></label>
+      <label>Wachtwoord<input name="password" type="password" autocomplete="current-password" required></label>
+      <button class="btn btn-primary" type="submit">Inloggen</button>
+    </form>
+    <div id="admin-dashboard" hidden>
+      <div class="hero-actions"><button id="admin-refresh" class="btn btn-outline" type="button">Verversen</button><button id="admin-logout" class="btn btn-outline" type="button">Uitloggen</button></div>
+      <section class="section">
+        <h2>Evenementen</h2>
+        <div id="admin-events" class="card-grid"></div>
+      </section>
+      <div class="card-grid">
+        <section class="panel">
+          <h2>Evenement aanmaken</h2>
+          <p>Nieuwe evenementen starten als concept. Testevenementen blijven privé.</p>
+          <form id="event-form" class="form-stack">
+            <label>Naam<input name="title" minlength="3" maxlength="120" required></label>
+            <label>Datum en tijd (lokale tijd van dit apparaat)<input name="startsAt" type="datetime-local" required></label>
+            <label>Locatie<input name="location" minlength="3" maxlength="240" required></label>
+            <label>Prijs in euro<input name="price" type="number" min="1" max="1000" step="0.01" value="15.00" required></label>
+            <label>Capaciteit<input name="capacity" type="number" min="1" max="100000" value="100" required></label>
+            <button type="submit" class="btn btn-primary">Concept opslaan</button>
+          </form>
+        </section>
+        <section class="panel">
+          <h2>Privé-testbestelling</h2>
+          <p>Alleen testbetalingen. Er wordt geen geld afgeschreven. In lokale previewmodus versturen we geen e-mail.</p>
+          <form id="test-order-form" class="form-stack">
+            <label>Testevenement<select name="eventId" id="test-event" required></select></label>
+            <label>Naam<input name="name" minlength="2" maxlength="120" required></label>
+            <label>E-mailadres<input name="email" type="email" required></label>
+            <label>Aantal<input name="quantity" type="number" min="1" max="10" value="1" required></label>
+            <button type="submit" class="btn btn-primary">Testbetaling starten</button>
+          </form>
+        </section>
+        <section class="panel">
+          <h2>Beveiliger toevoegen</h2>
+          <form id="staff-form" class="form-stack">
+            <label>Gebruikersnaam<input name="username" pattern="[a-z0-9._\-]{3,80}" autocomplete="off" required></label>
+            <label>Tijdelijk wachtwoord (minimaal 14 tekens)<input name="password" type="password" minlength="14" maxlength="256" autocomplete="new-password" required></label>
+            <button type="submit" class="btn btn-primary">Account aanmaken</button>
+          </form>
+          <div id="staff-users"></div>
+        </section>
+      </div>
+      <section class="section">
+        <h2>Laatste 100 bestellingen</h2>
+        <p>Preview betekent: niet gemaild; tickets zijn beschikbaar op de persoonlijke bestellink.</p>
+        <div class="table-scroll"><table><thead><tr><th>Evenement</th><th>Naam</th><th>Aantal</th><th>Betaling</th><th>Mail</th><th>Actie</th></tr></thead><tbody id="admin-orders"></tbody></table></div>
+      </section>
+    </div>
+  </main>
+  <script src="js/admin.js"></script>
+</body>
+</html>
