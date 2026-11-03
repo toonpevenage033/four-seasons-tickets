@@ -1,6 +1,6 @@
 import { loadConfig } from "./config.js";
 import { openDatabase, migrate } from "./db.js";
-import { passwordHash, uuid } from "./auth.js";
+import { passwordHash, resetPassword, uuid } from "./auth.js";
 import { z } from "zod";
 
 const config = loadConfig();
@@ -25,12 +25,18 @@ try {
       console.log("Privé-testevenement aangemaakt. Niet zichtbaar in publieke verkoop.");
       break;
     }
+    case "reset-password":
     case "user": {
       const input = z.object({
         CREATE_USERNAME: z.string().trim().toLowerCase().regex(/^[a-z0-9._-]{3,80}$/),
         CREATE_PASSWORD: z.string().min(14).max(256),
         CREATE_ROLE: z.enum(["admin", "staff"]).default("staff")
       }).parse(process.env);
+      if (process.argv[2] === "reset-password") {
+        await resetPassword(db, input.CREATE_USERNAME, input.CREATE_PASSWORD);
+        console.log("Wachtwoord gewijzigd. Bestaande sessies zijn ingetrokken.");
+        break;
+      }
       await db.query(
         "INSERT INTO users(id,username,password_hash,role) VALUES($1,$2,$3,$4)",
         [uuid(), input.CREATE_USERNAME, await passwordHash(input.CREATE_PASSWORD), input.CREATE_ROLE]
@@ -38,7 +44,7 @@ try {
       console.log("Account aangemaakt. Verwijder CREATE_PASSWORD nu uit je lokale configuratie.");
       break;
     }
-    default: throw new Error("Gebruik migrate, seed of user.");
+    default: throw new Error("Gebruik migrate, seed, user of reset-password.");
   }
 } finally {
   await db.close();

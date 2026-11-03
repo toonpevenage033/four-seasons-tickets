@@ -11,6 +11,7 @@
     "db:migrate": "node --env-file-if-exists=.env server/cli.js migrate",
     "db:seed": "node --env-file-if-exists=.env server/cli.js seed",
     "user:create": "node --env-file-if-exists=.env server/cli.js user",
+    "user:reset-password": "node --env-file-if-exists=.env server/cli.js reset-password",
     "test": "node --test --test-concurrency=1 tests/*.test.js",
     "test:postgres": "node tests/postgres-runner.js",
     "check": "node --check server/index.js && node --check server/app.js && node --check server/service.js && node --check js/tickets.js && node --check js/admin.js"

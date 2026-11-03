@@ -50,7 +50,9 @@ async function request(baseUrl: string, path: string, token?: string, body?: unk
     if (!response.ok) {
       const error = isRecord(data) && isRecord(data.error) ? data.error : null;
       const defaults: Record<number, string> = {
-        401: 'Session expired. Sign in again.',
+        401: path === '/api/staff/login'
+          ? 'Gebruikersnaam of wachtwoord onjuist. Probeer opnieuw.'
+          : 'Session expired. Sign in again.',
         403: 'Access denied. Ask an administrator.',
         429: 'Too many requests. Wait before retrying.',
       };

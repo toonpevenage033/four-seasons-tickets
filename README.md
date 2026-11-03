@@ -45,6 +45,11 @@ npm run user:create
 Verwijder daarna `CREATE_PASSWORD` uit `.env`. Deel geen API-sleutels of
 wachtwoorden in chat, commits of screenshots.
 
+Vergeten of verkeerd getypt wachtwoord? Stel dezelfde `CREATE_USERNAME` en een
+nieuw `CREATE_PASSWORD` tijdelijk in en voer `npm run user:reset-password` uit.
+Dit wijzigt alleen het bestaande accountwachtwoord en trekt zijn sessies in;
+de rol en blokkering blijven behouden. Verwijder het wachtwoord daarna weer.
+
 ```bash
 npm start
 ```

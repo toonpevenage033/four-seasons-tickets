@@ -4,7 +4,7 @@ import { loadConfig } from "../server/config.js";
 import { openDatabase, migrate } from "../server/db.js";
 import { createApp } from "../server/app.js";
 import { createMailer, createPayments } from "../server/providers.js";
-import { passwordHash, uuid } from "../server/auth.js";
+import { passwordHash, resetPassword, uuid } from "../server/auth.js";
 
 const config = loadConfig({
   NODE_ENV: "test", DB_DRIVER: process.env.TEST_DATABASE_URL ? "pg" : "pglite",
@@ -77,6 +77,21 @@ test("configuration refuses unsafe production, live and mock combinations", () =
   assert.throws(() => loadConfig({ DB_DRIVER: "pglite", PAYMENT_PROVIDER: "mock", BASE_URL: "https://example.com" }), /uitsluitend/);
   assert.throws(() => loadConfig({ DB_DRIVER: "pglite", PAYMENT_PROVIDER: "mollie", MOLLIE_API_KEY: "live_not-real" }), /PAYMENT_MODE/);
   assert.throws(() => loadConfig({ DB_DRIVER: "pglite", PAYMENT_PROVIDER: "mock", LIVE_SALES_ENABLED: "true" }), /Live verkoop/);
+});
+
+test("password reset revokes sessions and preserves account role and activation", async () => {
+  await resetPassword(db, "admin", "new-test-password-12345");
+  assert.equal((await request("/api/admin/session", { cookie: adminCookie })).status, 401);
+  assert.equal((await request("/api/staff/login", { method: "POST", body: { username: "admin", password } })).status, 401);
+  const result = await request("/api/staff/login", {
+    method: "POST", body: { username: "admin", password: "new-test-password-12345" }
+  });
+  assert.equal(result.status, 200);
+  assert.equal(result.data.user.role, "admin");
+  await assert.rejects(resetPassword(db, "missing", "new-test-password-12345"), /Account niet gevonden/);
+  await db.query("UPDATE users SET active=false WHERE username='staff'");
+  await resetPassword(db, "staff", "new-test-password-12345");
+  assert.equal((await db.query("SELECT active FROM users WHERE username='staff'")).rows[0].active, false);
 });
 
 test("hosted disabled payments permits login and scanning without creating reservations", async () => {

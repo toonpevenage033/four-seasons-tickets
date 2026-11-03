@@ -67,6 +67,17 @@ test('401, 403, 429 preserve status/code and never become valid scan results', a
   }
 });
 
+test('invalid login is not presented as an expired session', async () => {
+  globalThis.fetch = async () => Response.json({
+    error: { code: 'LOGIN_FAILED', message: 'Gebruikersnaam of wachtwoord onjuist.' },
+  }, { status: 401 });
+  await assert.rejects(login(session.baseUrl, 'door', 'incorrect'),
+    (error: unknown) => error instanceof ApiError && error.status === 401 &&
+      error.code === 'LOGIN_FAILED' && error.message.includes('wachtwoord onjuist'));
+  await assert.rejects(events(session),
+    (error: unknown) => error instanceof ApiError && error.message === 'Session expired. Sign in again.');
+});
+
 test('background cancellation aborts pending transport and rejects unconfirmed result', async () => {
   let signal: AbortSignal | undefined;
   globalThis.fetch = async (_url, init) => {
