@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Feest aanvragen — KOORTS-EVENTS</title>
+  <meta name="description" content="Vraag jouw feest aan bij KOORTS-EVENTS: bedrijfsuitje, verjaardag of elk ander feest. Vul het formulier in en we nemen snel contact op.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" type="image/png" href="images/Pictogram.png">
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-inner">
+      <a href="index.html" class="brand-link" aria-label="KOORTS-EVENTS — Home"><img class="brand-icon" src="images/Pictogram.png" alt="" width="800" height="800"><span>KOORTS-EVENTS</span></a>
+      <button class="hamburger" aria-label="Menu openen" aria-expanded="false" aria-controls="nav-menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </header>
+
+  <nav class="nav-menu" id="nav-menu">
+    <a href="index.html">Home</a>
+    <a href="evenementen.html">Evenementen</a>
+    <a href="fotos.html">Foto's</a>
+    <a href="over-ons.html">Over ons</a>
+    <a href="contact.html">Contact</a>
+  </nav>
+  <div class="nav-overlay"></div>
+
+  <main>
+    <section class="section page-head">
+      <div class="container">
+        <h1 class="section-title">Vraag <span class="mark">jouw feest</span> aan</h1>
+        <p class="section-intro">Bedrijfsuitje, verjaardag of iets heel anders? Vul het formulier in en we nemen meestal binnen 24 uur contact met je op.</p>
+      </div>
+    </section>
+
+    <section class="section section-no-top">
+      <div class="container">
+        <form id="party-form" class="panel form-stack">
+          <h2>Over jou</h2>
+          <label>Naam *<input name="naam" autocomplete="name" minlength="2" maxlength="120" required></label>
+          <label>E-mailadres *<input name="email" type="email" autocomplete="email" maxlength="254" required></label>
+          <label>Telefoonnummer (optioneel)<input name="telefoon" type="tel" autocomplete="tel" maxlength="20"></label>
+
+          <h2>Over het feest</h2>
+          <label>Soort feest *
+            <select name="soort" required>
+              <option value="" selected disabled>Maak een keuze…</option>
+              <option>Bedrijfsuitje / personeelsfeest</option>
+              <option>Verjaardag</option>
+              <option>Examen- of eindfeest</option>
+              <option>Jubileum</option>
+              <option>Anders</option>
+            </select>
+          </label>
+          <label>Gewenste datum (of periode)<input name="datum" maxlength="60" placeholder="Bijv. 14 maart of ergens in mei"></label>
+          <label>Verwacht aantal gasten<input name="gasten" type="number" min="1" max="10000" placeholder="Bijv. 50"></label>
+          <label>Locatie
+            <select name="locatie">
+              <option selected>Nog geen locatie — denk met ons mee</option>
+              <option>We hebben al een locatie</option>
+            </select>
+          </label>
+          <label>Indicatie budget (optioneel)<input name="budget" maxlength="60" placeholder="Bijv. € 1.500"></label>
+          <label>Vertel over je feest *<textarea name="wensen" rows="5" maxlength="2000" required placeholder="Wat voor sfeer, muziek en extra's heb je in gedachten? Alles wat je kwijt wilt."></textarea></label>
+
+          <p class="contact-note">Na versturen opent je e-mailprogramma met alles netjes ingevuld — druk daar op verzenden en de aanvraag is binnen. Liever direct mailen? Dat kan ook: <a href="mailto:koortsevents@gmail.com">koortsevents@gmail.com</a>.</p>
+          <button class="btn btn-primary" type="submit">🎉 Verstuur aanvraag</button>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <span>© 2026 KOORTS-EVENTS — Alle rechten voorbehouden</span>
+      <nav class="footer-nav">
+        <a href="evenementen.html">Evenementen</a>
+        <a href="fotos.html">Foto's</a>
+        <a href="over-ons.html">Over ons</a>
+        <a href="contact.html">Contact</a>
+      </nav>
+    </div>
+  </footer>
+
+  <script src="js/main.js"></script>
+</body>
+</html>

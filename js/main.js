@@ -79,3 +79,39 @@
     grid.appendChild(fig);
   });
 })();
+
+// ---------- Feestaanvraag (alleen op feest-aanvragen.html) ----------
+// Bouwt een gestructureerde e-mail en opent het mailprogramma van de bezoeker.
+(function () {
+  const form = document.querySelector("#party-form");
+  if (!form) return;
+  form.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const v = (name) => (form.elements[name].value || "").trim();
+    const soort = v("soort");
+    const regels = [
+      "Hoi KOORTS-EVENTS,",
+      "",
+      "Ik wil graag een feest aanvragen. Dit zijn de gegevens:",
+      "",
+      "— Naam: " + v("naam"),
+      "— E-mail: " + v("email"),
+      v("telefoon") ? "— Telefoon: " + v("telefoon") : null,
+      "— Soort feest: " + soort,
+      v("datum") ? "— Gewenste datum: " + v("datum") : "— Gewenste datum: nog open",
+      v("gasten") ? "— Aantal gasten: ±" + v("gasten") : null,
+      "— Locatie: " + v("locatie"),
+      v("budget") ? "— Indicatie budget: " + v("budget") : null,
+      "",
+      "Over het feest:",
+      v("wensen"),
+      "",
+      "Groetjes,",
+      v("naam"),
+    ].filter((r) => r !== null);
+    const mailto = "mailto:koortsevents@gmail.com" +
+      "?subject=" + encodeURIComponent("Feestaanvraag — " + soort) +
+      "&body=" + encodeURIComponent(regels.join("\n"));
+    location.href = mailto;
+  });
+})();

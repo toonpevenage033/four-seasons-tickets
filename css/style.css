@@ -487,10 +487,12 @@ button:disabled { opacity: 0.6; cursor: wait; }
 .panel h2, .panel h3 { margin-bottom: 1rem; }
 .form-stack { display: grid; gap: 1.2rem; margin-top: 1.5rem; }
 .form-stack label { display: grid; gap: 0.4rem; font-weight: 600; }
-.form-stack input, .form-stack select {
+.form-stack input, .form-stack select, .form-stack textarea {
   width: 100%; min-width: 0; padding: 0.8rem; border: 1px solid var(--border);
   border-radius: 8px; background: var(--bg); color: var(--text);
+  font: inherit; resize: vertical;
 }
+.form-stack h2 { margin-top: 0.5rem; }
 .btn { border: 1px solid transparent; text-align: center; }
 .btn-outline { border-color: var(--border); background: transparent; }
 .notice { margin: 1rem 0; padding: 1rem; border-left: 4px solid var(--accent); background: var(--bg-soft); overflow-wrap: anywhere; }
