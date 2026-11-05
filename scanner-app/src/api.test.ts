@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { afterEach, test } from 'node:test';
-import { ApiError, cancelRequests, events, login, logout, scan } from './api.ts';
+import { ApiError, cancelRequests, events, login, loginTickable, logout, scan, TICKABLE_BASE_URL } from './api.ts';
 import { ScanGate } from './core.ts';
 import type { Session } from './core.ts';
 
@@ -114,4 +114,113 @@ test('expired local session and malformed successful responses fail closed', asy
     (error: unknown) => error instanceof ApiError && error.status === 401);
   assert.equal(calls, 0);
   await assert.rejects(scan(session, { eventId: 'e', code: 't', requestId: 'id' }), ApiError);
+});
+
+const tickableSession: Session = {
+  baseUrl: TICKABLE_BASE_URL,
+  token: 'tk_live_test',
+  expiresAt: '2099-01-01T00:00:00Z',
+  user: { id: 'uid', username: 'KOORTS', role: 'staff' },
+  provider: 'tickable',
+};
+const ticketId = 'c3d4e5f6-7890-4a1b-2c3d-4e5f6a7b8c9d';
+const tickableScanBody = (overrides: Record<string, unknown> = {}) => ({
+  ticket_id: ticketId, status: 'valid', scanned_before: false,
+  event: { id: 'event-1', title: 'KOORTS', location: null },
+  timeslot: { title: null, starts_at: null, ends_at: null },
+  ticket_type: { id: 't', name: 'Regular', price: 1500 },
+  owner_name: 'Jane', owner_email: 'jane@example.com', seat: null,
+  scanned_at: '2026-06-15T14:30:00Z', cancelled_at: null, related_tickets: null,
+  ...overrides,
+});
+
+test('tickable login validates the key via /whoami and returns a tickable session', async () => {
+  const calls: { url: string; init: RequestInit }[] = [];
+  globalThis.fetch = async (input, init) => {
+    calls.push({ url: String(input), init: init! });
+    return Response.json({ uid: 'uid', email: 'org@example.com', organization: 'KOORTS' });
+  };
+  const result = await loginTickable('  tk_live_test  ');
+  assert.deepEqual(calls.map(c => [c.url, c.init.method]), [[`${TICKABLE_BASE_URL}/whoami`, 'GET']]);
+  assert.equal(new Headers(calls[0]!.init.headers).get('Authorization'), 'Bearer tk_live_test');
+  assert.equal(result.provider, 'tickable');
+  assert.equal(result.baseUrl, TICKABLE_BASE_URL);
+  assert.equal(result.user.username, 'KOORTS');
+  assert.ok(Date.parse(result.expiresAt) > Date.now());
+  await assert.rejects(loginTickable('two words'), ApiError);
+  await assert.rejects(loginTickable('   '), ApiError);
+});
+
+test('tickable events map platform fields and prefer the first timeslot date', async () => {
+  globalThis.fetch = async input => {
+    const url = String(input);
+    if (url.includes('/timeslots')) {
+      if (url.includes('event-1')) return Response.json({ data: [{ title: null, starts_at: '2026-06-15T10:00:00Z', ends_at: null }] });
+      return Response.json({ error: { code: 'resource_missing', message: 'No timeslots' } }, { status: 404 });
+    }
+    return Response.json({
+      data: [
+        { id: 'event-1', title: 'KOORTS Winter', location: 'Gent', created_at: '2026-04-01T12:00:00Z' },
+        { id: 'event-2', title: 'KOORTS Zomer', location: null, created_at: '2026-04-02T12:00:00Z' },
+      ],
+      pagination: { total: 2, limit: 100, offset: 0, has_more: false },
+    });
+  };
+  const result = await events(tickableSession);
+  assert.deepEqual(result, [
+    { id: 'event-1', title: 'KOORTS Winter', startsAt: '2026-06-15T10:00:00Z', location: 'Gent', isTest: false },
+    { id: 'event-2', title: 'KOORTS Zomer', startsAt: '2026-04-02T12:00:00Z', location: '', isTest: false },
+  ]);
+});
+
+test('tickable scan posts to the scan endpoint and maps every status', async () => {
+  const calls: { url: string; init: RequestInit }[] = [];
+  let response = tickableScanBody();
+  globalThis.fetch = async (input, init) => {
+    calls.push({ url: String(input), init: init! });
+    return Response.json(response);
+  };
+  const request = { eventId: 'event-1', code: `https://tickets.example/${ticketId}`, requestId: 'r1' };
+  const valid = await scan(tickableSession, request);
+  assert.deepEqual(calls.map(c => [c.url, c.init.method]), [[`${TICKABLE_BASE_URL}/tickets/${ticketId}/scan`, 'POST']]);
+  assert.equal(valid.status, 'valid');
+  assert.equal(valid.scannedAt, '2026-06-15T14:30:00Z');
+  response = tickableScanBody({ status: 'scanned' });
+  assert.equal((await scan(tickableSession, request)).status, 'already_used');
+  response = tickableScanBody({ status: 'cancelled' });
+  assert.equal((await scan(tickableSession, request)).status, 'invalid');
+  response = tickableScanBody({ status: 'not_allowed', scanned_at: null });
+  assert.equal((await scan(tickableSession, request)).status, 'invalid');
+  response = tickableScanBody({ event: { id: 'other-event', title: 'Other', location: null } });
+  const wrongEvent = await scan(tickableSession, request);
+  assert.equal(wrongEvent.status, 'invalid');
+  assert.match(wrongEvent.message, /different event/);
+});
+
+test('tickable scan fails closed on unknown tickets and foreign QR codes', async () => {
+  let calls = 0;
+  globalThis.fetch = async () => {
+    calls++;
+    return Response.json({ error: { type: 'not_found_error', code: 'resource_missing', message: 'No such ticket.', request_id: 'req' } }, { status: 404 });
+  };
+  const notFound = await scan(tickableSession, { eventId: 'event-1', code: ticketId, requestId: 'r1' });
+  assert.equal(notFound.status, 'invalid');
+  assert.equal(calls, 1);
+  const noUuid = await scan(tickableSession, { eventId: 'event-1', code: 'opaque://not-a-tickable-code', requestId: 'r2' });
+  assert.equal(noUuid.status, 'invalid');
+  assert.equal(calls, 1);
+  globalThis.fetch = async () => { calls++; return Response.json({ status: 'valid' }); };
+  await assert.rejects(scan(tickableSession, { eventId: 'event-1', code: ticketId, requestId: 'r3' }), ApiError);
+});
+
+test('tickable logout never calls the network and 403/500 scan errors still throw', async () => {
+  let calls = 0;
+  globalThis.fetch = async () => {
+    calls++;
+    return Response.json({ error: { type: 'permission_error', code: 'forbidden', message: 'Nope', request_id: 'req' } }, { status: 403 });
+  };
+  await logout(tickableSession);
+  assert.equal(calls, 0);
+  await assert.rejects(scan(tickableSession, { eventId: 'event-1', code: ticketId, requestId: 'r1' }),
+    (error: unknown) => error instanceof ApiError && error.status === 403);
 });

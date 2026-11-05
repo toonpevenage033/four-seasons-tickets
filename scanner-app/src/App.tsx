@@ -6,6 +6,7 @@ import {
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { CameraView, useCameraPermissions } from 'expo-camera';
+import { setAudioModeAsync, useAudioPlayer } from 'expo-audio';
 import * as Crypto from 'expo-crypto';
 import * as Haptics from 'expo-haptics';
 import * as api from './api';
@@ -33,9 +34,11 @@ function Brand() {
 }
 
 function Login({ onLogin, notice }: { onLogin: (session: Session) => Promise<void>; notice: string }) {
+  const [mode, setMode] = useState<'staff' | 'tickable'>('staff');
   const [baseUrl, setBaseUrl] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [apiKey, setApiKey] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const live = useRef(true);
@@ -44,6 +47,19 @@ function Login({ onLogin, notice }: { onLogin: (session: Session) => Promise<voi
   async function submit() {
     if (busy) return;
     setError('');
+    if (mode === 'tickable') {
+      const secret = apiKey.trim();
+      if (!secret) { setError('Paste your Tickable API key.'); return; }
+      setApiKey('');
+      setBusy(true);
+      try {
+        const session = await api.loginTickable(secret);
+        if (live.current && AppState.currentState === 'active') await onLogin(session);
+      } catch (e) {
+        if (live.current) setError(errorText(e));
+      } finally { if (live.current) setBusy(false); }
+      return;
+    }
     let url: string;
     try { url = normalizeBaseUrl(baseUrl, __DEV__); } catch (e) { setError(errorText(e)); return; }
     if (!username.trim() || !password) { setError('Enter your username and password.'); return; }
@@ -61,22 +77,37 @@ function Login({ onLogin, notice }: { onLogin: (session: Session) => Promise<voi
   return <KeyboardAvoidingView style={s.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
     <ScrollView contentContainerStyle={s.page} keyboardShouldPersistTaps="handled">
       <Brand />
-      <Text style={s.title}>Staff sign in</Text>
-      <Text style={s.copy}>Use your private event staff account. Tickets are checked online only.</Text>
-      {!!notice && <Text accessibilityLiveRegion="polite" style={s.notice}>{notice}</Text>}
-      <Text style={s.label}>Backend URL</Text>
-      <TextInput style={s.input} value={baseUrl} onChangeText={setBaseUrl} editable={!busy}
-        placeholder="https://tickets.example.org" placeholderTextColor={C.muted} keyboardType="url"
-        autoCapitalize="none" autoCorrect={false} accessibilityLabel="Backend URL" />
-      <Text style={s.label}>Username</Text>
-      <TextInput style={s.input} value={username} onChangeText={setUsername} editable={!busy}
-        autoCapitalize="none" autoCorrect={false} autoComplete="username" accessibilityLabel="Username" />
-      <Text style={s.label}>Password</Text>
-      <TextInput style={s.input} value={password} onChangeText={setPassword} editable={!busy} secureTextEntry
-        autoComplete="current-password" accessibilityLabel="Password" onSubmitEditing={() => void submit()} />
+      {mode === 'staff' ? <>
+        <Text style={s.title}>Staff sign in</Text>
+        <Text style={s.copy}>Use your private event staff account. Tickets are checked online only.</Text>
+        {!!notice && <Text accessibilityLiveRegion="polite" style={s.notice}>{notice}</Text>}
+        <Text style={s.label}>Backend URL</Text>
+        <TextInput style={s.input} value={baseUrl} onChangeText={setBaseUrl} editable={!busy}
+          placeholder="https://tickets.example.org" placeholderTextColor={C.muted} keyboardType="url"
+          autoCapitalize="none" autoCorrect={false} accessibilityLabel="Backend URL" />
+        <Text style={s.label}>Username</Text>
+        <TextInput style={s.input} value={username} onChangeText={setUsername} editable={!busy}
+          autoCapitalize="none" autoCorrect={false} autoComplete="username" accessibilityLabel="Username" />
+        <Text style={s.label}>Password</Text>
+        <TextInput style={s.input} value={password} onChangeText={setPassword} editable={!busy} secureTextEntry
+          autoComplete="current-password" accessibilityLabel="Password" onSubmitEditing={() => void submit()} />
+      </> : <>
+        <Text style={s.title}>Tickable sign in</Text>
+        <Text style={s.copy}>Paste an API key created in the Tickable dashboard (Settings → Developers). Use a key limited to the events.read, tickets.read and tickets.write scopes.</Text>
+        {!!notice && <Text accessibilityLiveRegion="polite" style={s.notice}>{notice}</Text>}
+        <Text style={s.label}>Tickable API key</Text>
+        <TextInput style={s.input} value={apiKey} onChangeText={setApiKey} editable={!busy} secureTextEntry
+          placeholder="tk_live_…" placeholderTextColor={C.muted}
+          autoCapitalize="none" autoCorrect={false} accessibilityLabel="Tickable API key"
+          onSubmitEditing={() => void submit()} />
+      </>}
       {!!error && <Text accessibilityRole="alert" style={s.error}>{error}</Text>}
       <Button title={busy ? 'Signing in…' : 'Sign in'} disabled={busy} onPress={() => void submit()} />
-      <Text style={s.small}>Your password is never saved. The session is stored in this device’s secure storage.</Text>
+      <Button title={mode === 'staff' ? 'Use a Tickable API key instead' : 'Use a staff account instead'}
+        secondary disabled={busy} onPress={() => { setError(''); setMode(mode === 'staff' ? 'tickable' : 'staff'); }} />
+      <Text style={s.small}>{mode === 'staff'
+        ? 'Your password is never saved. The session is stored in this device’s secure storage.'
+        : 'The API key is stored only in this device’s secure storage and expires locally after 30 days.'}</Text>
     </ScrollView>
   </KeyboardAvoidingView>;
 }
@@ -125,6 +156,9 @@ function Scanner({ session, event, onBack, onAuthError, onLogout }: AuthProps & 
   event: StaffEvent; onBack: () => void;
 }) {
   const [permission, requestPermission] = useCameraPermissions();
+  const soundValid = useAudioPlayer(require('../assets/sounds/valid.wav'));
+  const soundUsed = useAudioPlayer(require('../assets/sounds/already_used.wav'));
+  const soundInvalid = useAudioPlayer(require('../assets/sounds/invalid.wav'));
   const [gate] = useState(() => new ScanGate(() => Crypto.randomUUID()));
   const [, render] = useState(0);
   const update = () => render(x => x + 1);
@@ -135,6 +169,11 @@ function Scanner({ session, event, onBack, onAuthError, onLogout }: AuthProps & 
   const live = useRef(true);
   const state = gate.state;
   gate.active = active;
+
+  useEffect(() => {
+    // Door staff must hear results even with the iOS silent switch on.
+    void setAudioModeAsync({ playsInSilentMode: true }).catch(() => undefined);
+  }, []);
 
   useEffect(() => {
     const sub = AppState.addEventListener('change', next => {
@@ -171,6 +210,12 @@ function Scanner({ session, event, onBack, onAuthError, onLogout }: AuthProps & 
         const type = result.status === 'valid' ? Haptics.NotificationFeedbackType.Success :
           result.status === 'already_used' ? Haptics.NotificationFeedbackType.Warning : Haptics.NotificationFeedbackType.Error;
         void Haptics.notificationAsync(type).catch(() => undefined);
+        // Audio failure never changes the displayed result.
+        try {
+          const player = result.status === 'valid' ? soundValid : result.status === 'already_used' ? soundUsed : soundInvalid;
+          void Promise.resolve(player.seekTo(0)).catch(() => undefined);
+          player.play();
+        } catch { /* sound is best-effort feedback */ }
         update();
       }
     } catch (e) {
@@ -232,7 +277,9 @@ function Scanner({ session, event, onBack, onAuthError, onLogout }: AuthProps & 
       </View> : state.phase === 'retry' ? <View style={s.panel}>
         <Text accessibilityRole="alert" style={[s.status, { color: C.red }]}>NOT CONFIRMED</Text>
         <Text style={s.copy}>{state.message}</Text>
-        <Text style={s.small}>The camera stays paused. Retry sends the same ticket and request ID, even if the previous check reached the server.</Text>
+        <Text style={s.small}>{session.provider === 'tickable'
+          ? 'The camera stays paused. If the previous check did reach Tickable, the retry shows ALREADY USED with a scan time of moments ago — that person may be admitted once.'
+          : 'The camera stays paused. Retry sends the same ticket and request ID, even if the previous check reached the server.'}</Text>
         <Button title="Retry same check" onPress={() => { const request = gate.retry(); if (request) void send(request); }} />
       </View> : result ? <View style={s.panel} accessibilityLiveRegion="assertive">
         <Text style={[s.status, { color: resultColor }]}>{resultTitle}</Text>

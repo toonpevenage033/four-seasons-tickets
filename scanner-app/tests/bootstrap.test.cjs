@@ -21,6 +21,7 @@ function harness(initialSession = null) {
   const cache = new Map();
   const assets = [];
   const haptics = [];
+  const sounds = [];
   const storageCalls = [];
   let saved = initialSession ? JSON.stringify(initialSession) : null;
   let deleteFails = false;
@@ -64,6 +65,10 @@ function harness(initialSession = null) {
       notificationAsync: async type => { haptics.push(type); },
     },
     'expo-secure-store': secureStore,
+    'expo-audio': {
+      setAudioModeAsync: async () => {},
+      useAudioPlayer: source => ({ seekTo: async () => {}, play: () => { sounds.push(source); } }),
+    },
   };
 
   function load(filename) {
@@ -72,6 +77,11 @@ function harness(initialSession = null) {
       assert.equal(fs.readFileSync(filename).subarray(1, 4).toString(), 'PNG');
       assets.push(filename);
       return 1;
+    }
+    if (filename.endsWith('.wav')) {
+      assert.equal(fs.readFileSync(filename).subarray(0, 4).toString(), 'RIFF');
+      assets.push(filename);
+      return filename;
     }
     const module = { exports: {} };
     cache.set(filename, module);
@@ -92,7 +102,7 @@ function harness(initialSession = null) {
 
   load(path.resolve(__dirname, '../index.ts'));
   return {
-    App: registered, assets, haptics, storageCalls,
+    App: registered, assets, haptics, sounds, storageCalls,
     storage: load(path.resolve(__dirname, '../src/storage.ts')),
     get saved() { return saved; },
     set deleteFails(value) { deleteFails = value; },
@@ -154,11 +164,14 @@ test('rendered scanner preserves request ID through transport failure and never 
     assert.match(text(tree), /NOT CONFIRMED/);
     assert.equal(scans.length, 1);
     assert.equal(h.haptics.length, 0);
+    assert.equal(h.sounds.length, 0);
     assert.equal(tree.root.findAllByType('CameraView').length, 0);
     await act(async () => button(tree, 'Retry same check').props.onPress());
     assert.deepEqual(scans[0], scans[1]);
     assert.match(text(tree), /VALID/);
     assert.deepEqual(h.haptics, ['success']);
+    assert.equal(h.sounds.length, 1);
+    assert.match(String(h.sounds[0]), /valid\.wav$/);
     await act(async () => callback({ data: 'another-ticket' }));
     assert.equal(scans.length, 2);
     assert.equal(tree.root.findAllByType('CameraView').length, 0);

@@ -45,14 +45,23 @@ Errors: `{error:{code:string,message:string}}` with a non-2xx HTTP status. `401`
 
 The backend must atomically redeem tickets and store/replay a scan result keyed by `requestId`, with appropriate staff/event authorization and stable idempotency across retries. The client cannot provide exactly-once redemption by itself. A lost response followed by retry must replay the original result, **not** turn the original successful check into `already_used`.
 
-QR data is sent **verbatim** as an opaque code: never trimmed, decoded, navigated to, or parsed as a URL. Never return attendee details in `message`; the result UI intentionally uses fixed status copy rather than displaying this field.
+QR data is sent **verbatim** as an opaque code: never trimmed, decoded, navigated to, or parsed as a URL. Never return attendee details in `message`; the result UI intentionally uses fixed status copy rather than displaying this field. (Tickable mode is the single exception: the ticket UUID is extracted from the QR contents, see below.)
+
+## Tickable platform mode
+
+Instead of the private backend, the scanner can validate tickets sold through [Tickable](https://tickable.nl) directly against `https://api.tickable.io`:
+
+- On the login screen choose **Use a Tickable API key instead** and paste an API key created in the Tickable dashboard (Settings → Developers). Create a dedicated key limited to the `events.read`, `tickets.read` and `tickets.write` scopes; `tickets.write` is required for scanning.
+- The key is validated via `GET /whoami`, stored only in the device's secure storage, and expires locally after 30 days (Tickable keys do not expire server-side — revoke lost keys in the Tickable dashboard, as sign-out only clears the device).
+- Events come from `GET /events`; the displayed date is the first timeslot's start (falling back to the event's creation date). Scans call `POST /tickets/{ticket_id}/scan`; the ticket UUID is extracted from the QR contents. Statuses map as `valid → VALID`, `scanned → ALREADY USED`, and `cancelled`/`not_allowed`/unknown ticket/foreign QR → INVALID. A ticket belonging to a different event than the one selected is reported INVALID — note that Tickable may already have registered that scan.
+- Tickable has no idempotent `requestId`. If a check fails mid-flight and the retry shows **ALREADY USED** with a scan time of moments ago, the first attempt reached Tickable: that person may be admitted once. Scanner profile rules, scan windows and timeslot restrictions configured in Tickable are enforced server-side.
 
 ## Safety and operator behavior
 
 - Staff/admin login, event selection with date/location, prominent **TEST EVENT** badge.
 - Native QR-only camera; permission denial provides a Settings path. No image, video, audio, or QR history is recorded.
 - A synchronous gate allows only one in-flight check. Repeated callbacks are suppressed; identical codes have a two-second cooldown. Camera unmounts while checking, on failures and on results. **Next ticket** explicitly resumes it after a confirmed result.
-- Only the server's `valid` result grants admission and produces success haptics. `already_used` gives warning haptics; `invalid` gives error haptics. Haptic hardware failure never changes the result. No offline green state.
+- Only the server's `valid` result grants admission and produces success haptics. `already_used` gives warning haptics; `invalid` gives error haptics. Each confirmed result also plays a distinct sound (rising beeps, double mid tone, or low buzzer) that works with the iOS silent switch on. Haptic or audio hardware failure never changes the result. No offline green state.
 - Requests abort after 12 seconds. Background/inactive state suspends the camera and aborts transport; late results are discarded. Interrupted checks remain unconfirmed and retryable when foregrounded.
 - A retry reuses the **same request object, UUID, event and code**. Event switching is blocked while a result is uncertain. Logout warns before discarding an uncertain check.
 - Pending retries live in memory only, not a durable offline queue. Force-closing the app, OS process death, logout or auth expiry loses that pending request ID. If this happens after an ambiguous check, do **not** assume admission: reconcile it with authorized backend staff before rescanning/admitting.
@@ -72,7 +81,7 @@ npx expo export --platform all --output-dir dist
 
 The Node tests cover QR gating, duplicate suppression, explicit next scan, background suspension, byte-for-byte idempotent retry, exact API calls, expiry, malformed responses, HTTP errors, aborts/timeouts, and URL restrictions. The component smoke tests execute the real `index.ts` registration and render the actual app using React's test renderer with native bridges mocked: login and logo, event selection, transport failure/retry with the same request ID, a paused success result with one success haptic, logout revocation/secure deletion, deletion fallback and blocked-login recovery when secure storage fails. This is JavaScript rendering evidence, **not** a native device render or camera test. React's matching-version test renderer emits a deprecation warning but is used only in development tests.
 
-Implementation validation: Expo **58.0.22**, React Native **0.88.1**, React **19.3.0**; dependency install, TypeScript, 19 tests, Expo dependency compatibility and Android/iOS Metro export passed. The logo is included in both Metro bundles; the pictogram PNG exists and is referenced by native icon/splash configuration. No physical-phone camera, real backend integration, signed APK, native iOS build, or TestFlight upload was tested here. Run these acceptance checks on both actual platforms before distributing:
+Implementation validation: Expo **58.0.22**, React Native **0.88.1**, React **19.3.0**; dependency install, TypeScript, Expo dependency compatibility and Android/iOS Metro export passed. The logo is included in both Metro bundles; the pictogram PNG exists and is referenced by native icon/splash configuration. Follow-up Android validation passed TypeScript and all 20 tests, a local Gradle release build, release-key APK signature verification and 16 KB ZIP alignment. The APK includes its JavaScript, is not debuggable, disallows cleartext traffic, and contains both ARM phone architectures. No physical Android installation/camera test or TestFlight upload has been performed. Run these acceptance checks on both actual platforms before distributing:
 
 1. Valid staff/admin login, bad credentials, expired token, denied staff access.
 2. Select the correct event/test badge; allow/deny camera permission and return from Settings.
@@ -89,7 +98,41 @@ Implementation validation: Expo **58.0.22**, React Native **0.88.1**, React **19
 
 The other nine entries are dependent packages: `expo`, `@expo/cli`, `@expo/config`, `@expo/config-plugins`, `@expo/fingerprint`, `@expo/inline-modules`, `@expo/local-build-cache-provider`, `@expo/metro-config`, and `@expo/prebuild-config`. These paths are Expo build/development tooling, not ticket parsing or backend request processing. Do not feed untrusted filesystem glob patterns to those tools. No in-range advisory fix is currently available; no major overrides, forced updates or SDK downgrade were applied. `npm audit` suggests an older incompatible SDK with `--force`, which is not an appropriate fix. Review upstream SDK-compatible fixes before distribution.
 
-## APK and iOS distribution (not executed)
+## APK and iOS distribution
+
+### Local Android APK
+
+The local release setup uses Homebrew Java 17 and the Android command-line SDK, without an emulator or a hosted build service. Google SDK licenses must be accepted by the owner. The APK includes its JavaScript and does not require Metro or the Mac after installation.
+
+Local signing material is stored outside this repository in `~/.config/koorts-scanner/`: `release.keystore` and `signing-password`, with private filesystem permissions. Keep a secure backup of both; updates must use the same signing key. Never send these files to staff or commit them. Staff receive only `dist/KOORTS-Scanner-1.0.0.apk`.
+
+To rebuild on this Mac, run from `scanner-app/`:
+
+1. Unset `SCANNER_DEV_HTTP`. If generating Android again, use `npx expo prebuild --platform android --no-install` (not an iOS or clean prebuild).
+2. In generated `android/app/build.gradle`, set **only the release build type's** `signingConfig` to `null`. The generated default otherwise signs releases with a public debug key. This local generated-file change is ignored by Git and must be repeated after regeneration.
+3. Build, align, sign and verify using the existing private key:
+
+```sh
+export JAVA_HOME=/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home
+export ANDROID_HOME=/opt/homebrew/share/android-commandlinetools
+export PATH="$JAVA_HOME/bin:$PATH"
+unset SCANNER_DEV_HTTP
+(cd android && ./gradlew :app:assembleRelease --no-daemon --max-workers=2 \
+  -PreactNativeArchitectures=armeabi-v7a,arm64-v8a)
+# Continue only if the build succeeds.
+mkdir -p dist
+"$ANDROID_HOME/build-tools/37.0.0/zipalign" -f -P 16 4 \
+  android/app/build/outputs/apk/release/app-release-unsigned.apk dist/scanner-aligned.apk
+"$ANDROID_HOME/build-tools/37.0.0/apksigner" sign \
+  --ks "$HOME/.config/koorts-scanner/release.keystore" --ks-key-alias koorts-scanner \
+  --ks-pass "file:$HOME/.config/koorts-scanner/signing-password" \
+  --out dist/KOORTS-Scanner-1.0.0.apk dist/scanner-aligned.apk
+"$ANDROID_HOME/build-tools/37.0.0/apksigner" verify --verbose dist/KOORTS-Scanner-1.0.0.apk
+```
+
+Send the APK privately to an approved Android phone. Allow installation from that trusted source, install, then disable that installation permission again. Use backend `https://four-seasons-tickets.onrender.com` and a separate staff account, not the administrator's credentials. Internet and camera access are required. Before team distribution, test login, event selection, a valid QR and a duplicate scan on a physical Android phone; a successful build does not verify its camera. Increase Android `versionCode` for subsequent releases.
+
+### Hosted builds and iOS
 
 Identifiers are `com.koortsevents.scanner` on both platforms. `eas.json` contains an **internal Android APK** profile:
 

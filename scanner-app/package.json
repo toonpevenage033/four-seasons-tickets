@@ -2,7 +2,9 @@
   "name": "koorts-private-scanner",
   "version": "1.0.0",
   "private": true,
-  "engines": { "node": "^22.18.0 || ^24.3.0 || >=26.0.0" },
+  "engines": {
+    "node": "^22.18.0 || ^24.3.0 || >=26.0.0"
+  },
   "main": "index.ts",
   "scripts": {
     "start": "expo start",
@@ -13,6 +15,7 @@
   },
   "dependencies": {
     "expo": "~58.0.22",
+    "expo-audio": "~58.0.11",
     "expo-camera": "~58.0.14",
     "expo-crypto": "~58.0.7",
     "expo-haptics": "~58.0.7",

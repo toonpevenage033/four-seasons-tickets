@@ -36,5 +36,6 @@ export async function saveSession(session: Session): Promise<void> {
     token: session.token,
     expiresAt: session.expiresAt,
     user: { id: session.user.id, username: session.user.username, role: session.user.role },
+    ...(session.provider === 'tickable' ? { provider: 'tickable' } : {}),
   }), OPTIONS);
 }

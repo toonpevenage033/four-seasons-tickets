@@ -1,3 +1,9 @@
+// === TICKABLE TICKETSHOP ===
+// Plak hier de Tickable-shoplink zodra de verkoop live mag, bijvoorbeeld:
+//   const TICKET_SHOP_URL = "https://shop.tickable.nl/koorts";
+// Zolang dit leeg is ("") toont de site "Tickets binnenkort beschikbaar".
+const TICKET_SHOP_URL = "";
+
 const euro = cents => new Intl.NumberFormat("nl-NL", { style: "currency", currency: "EUR" }).format(cents / 100);
 const statusElement = document.querySelector("#page-status");
 const text = (tag, content, className) => {
@@ -14,9 +20,21 @@ async function api(url, options = {}) {
   return result;
 }
 
+function applyTicketShop() {
+  // Vervangt de "binnenkort"-badge door een echte koopknop zodra TICKET_SHOP_URL is ingevuld.
+  const badge = document.querySelector("#upcoming-events .badge-soon");
+  if (!badge || !TICKET_SHOP_URL) return;
+  const link = text("a", "🎟️ Koop tickets", "btn btn-primary");
+  link.href = TICKET_SHOP_URL;
+  link.rel = "noopener";
+  badge.replaceWith(link);
+}
+
 async function loadEventCards() {
   const container = document.querySelector("#upcoming-events");
   if (!container) return;
+  // Verkoop via Tickable: de eigen backend-verkoop wordt dan niet meer geladen.
+  if (TICKET_SHOP_URL) return;
   try {
     const { events } = await api("/api/events");
     if (!events.length) return;
@@ -155,6 +173,7 @@ async function devPaymentPage() {
   });
 }
 
+applyTicketShop();
 Promise.all([loadEventCards(), checkoutPage(), orderPage(), devPaymentPage()]).catch(error => {
   if (statusElement) statusElement.textContent = error.message;
   else console.error("Ticketpagina laden mislukt:", error.message);

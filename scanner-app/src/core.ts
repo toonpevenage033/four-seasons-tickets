@@ -1,5 +1,6 @@
 export type StaffUser = { id: string; username: string; role: 'staff' | 'admin' };
-export type Session = { baseUrl: string; token: string; expiresAt: string; user: StaffUser };
+// provider absent means the private KOORTS backend; 'tickable' uses the Tickable platform API.
+export type Session = { baseUrl: string; token: string; expiresAt: string; user: StaffUser; provider?: 'tickable' };
 export type StaffEvent = { id: string; title: string; startsAt: string; location: string; isTest: boolean };
 export type ScanRequest = { eventId: string; code: string; requestId: string };
 export type ScanResult = {
@@ -39,6 +40,7 @@ export function isDate(value: unknown): value is string {
 export function isLogin(value: unknown): value is Omit<Session, 'baseUrl'> {
   if (!isRecord(value) || !isRecord(value.user)) return false;
   return typeof value.token === 'string' && value.token.length > 0 && !/[\r\n]/.test(value.token) &&
+    (value.provider === undefined || value.provider === 'tickable') &&
     isDate(value.expiresAt) && typeof value.user.id === 'string' && typeof value.user.username === 'string' &&
     (value.user.role === 'staff' || value.user.role === 'admin');
 }
@@ -50,6 +52,60 @@ export function isEvent(value: unknown): value is StaffEvent {
 export function isScanResult(value: unknown): value is ScanResult {
   return isRecord(value) && ['valid', 'already_used', 'invalid'].includes(String(value.status)) &&
     typeof value.message === 'string' && (value.scannedAt === null || isDate(value.scannedAt));
+}
+
+// --- Tickable platform (api.tickable.io) ---
+
+const UUID_PATTERN = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
+
+// Tickable QR codes carry the ticket's scannable code (a UUID), possibly embedded in a URL.
+export function extractTicketId(code: string): string | null {
+  const match = UUID_PATTERN.exec(code.trim());
+  return match ? match[0]!.toLowerCase() : null;
+}
+
+export type TickableWhoami = { uid: string; email: string; organization: string };
+export function isTickableWhoami(value: unknown): value is TickableWhoami {
+  return isRecord(value) && typeof value.uid === 'string' && value.uid.length > 0 &&
+    typeof value.email === 'string' && typeof value.organization === 'string';
+}
+
+export type TickableEvent = { id: string; title: string; location: string | null; created_at: string };
+export function isTickableEvent(value: unknown): value is TickableEvent {
+  return isRecord(value) && typeof value.id === 'string' && value.id.length > 0 &&
+    typeof value.title === 'string' && (value.location === null || typeof value.location === 'string') &&
+    typeof value.created_at === 'string';
+}
+
+export type TickableScan = {
+  status: 'valid' | 'scanned' | 'cancelled' | 'not_allowed';
+  scanned_at: string | null;
+  event: { id: string };
+};
+export function isTickableScan(value: unknown): value is TickableScan {
+  return isRecord(value) && ['valid', 'scanned', 'cancelled', 'not_allowed'].includes(String(value.status)) &&
+    (value.scanned_at === null || isDate(value.scanned_at)) &&
+    isRecord(value.event) && typeof value.event.id === 'string';
+}
+
+export function mapTickableScan(scan: TickableScan, eventId: string): ScanResult {
+  if (scan.event.id !== eventId) {
+    return {
+      status: 'invalid',
+      message: 'Ticket belongs to a different event. Tickable may have marked it as scanned; verify in the dashboard.',
+      scannedAt: scan.scanned_at,
+    };
+  }
+  switch (scan.status) {
+    case 'valid':
+      return { status: 'valid', message: 'Admission confirmed by Tickable.', scannedAt: scan.scanned_at };
+    case 'scanned':
+      return { status: 'already_used', message: 'This ticket was already scanned.', scannedAt: scan.scanned_at };
+    case 'cancelled':
+      return { status: 'invalid', message: 'Ticket was cancelled.', scannedAt: scan.scanned_at };
+    default:
+      return { status: 'invalid', message: 'Not allowed by the scanner profile or scan window.', scannedAt: scan.scanned_at };
+  }
 }
 
 export type ScanState =
