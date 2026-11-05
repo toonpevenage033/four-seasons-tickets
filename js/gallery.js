@@ -62,6 +62,7 @@ window.GALERIJ = [
   "foto-058.jpg",
   "foto-059.jpg",
   "foto-060.jpg",
+  "foto-121.jpg",
   "foto-061.jpg",
   "foto-062.jpg",
   "foto-063.jpg",
