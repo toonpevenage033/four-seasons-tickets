@@ -539,3 +539,30 @@ td, th { padding: 0.75rem; border-bottom: 1px solid var(--border); }
 .contact-mail:hover { color: var(--accent-2); text-decoration: underline; }
 
 .contact-note { color: var(--text-muted); font-size: 0.95rem; }
+
+/* ---------- Verhaalfoto (Over ons) ---------- */
+
+.story-photo { margin: 1.5rem 0; }
+.story-photo img {
+  width: 100%; max-width: 560px; height: auto;
+  border-radius: var(--radius); border: 1px solid var(--border); display: block;
+}
+.story-photo figcaption { color: var(--text-muted); font-size: 0.9rem; margin-top: 0.5rem; }
+
+/* ---------- Social-knoppen ---------- */
+
+.social-links { display: flex; gap: 0.8rem; flex-wrap: wrap; margin-top: 1.5rem; }
+
+.social-btn {
+  display: inline-flex; align-items: center; gap: 0.55rem;
+  padding: 0.65rem 1.2rem; border: 1px solid var(--border); border-radius: 999px;
+  color: var(--text); text-decoration: none; font-weight: 600; background: var(--bg-card);
+  transition: border-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
+}
+
+.social-btn:hover { border-color: var(--accent); color: var(--accent); transform: translateY(-2px); }
+
+.social-btn svg { width: 20px; height: 20px; flex: none; }
+
+.announce p { margin-bottom: 1rem; }
+.announce p:last-child { margin-bottom: 0; }
