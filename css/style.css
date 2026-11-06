@@ -566,3 +566,20 @@ td, th { padding: 0.75rem; border-bottom: 1px solid var(--border); }
 
 .announce p { margin-bottom: 1rem; }
 .announce p:last-child { margin-bottom: 0; }
+
+/* ---------- Artiestenvideo's ---------- */
+
+.video-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1.2rem;
+  max-width: 700px;
+}
+
+.video-grid video {
+  width: 100%;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: #000;
+  display: block;
+}
