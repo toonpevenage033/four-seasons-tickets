@@ -183,7 +183,7 @@ export function createService(db, config, payments, mailer) {
         const { rows: [used] } = await tx.query(
           "UPDATE tickets SET scanned_at=now(),scanned_by=$2 WHERE id=$1 RETURNING scanned_at", [ticket.id, user.id]
         );
-        result = { status: "valid", message: `${event.is_test ? "TEST — " : ""}Ticket geldig. Toegang toegestaan.`, scannedAt: new Date(used.scanned_at).toISOString() };
+        result = { status: "valid", message: `${event.is_test ? "TEST: " : ""}Ticket geldig. Toegang toegestaan.`, scannedAt: new Date(used.scanned_at).toISOString() };
       }
       await tx.query("UPDATE scan_requests SET result=$3 WHERE user_id=$1 AND request_id=$2", [user.id, input.requestId, JSON.stringify(result)]);
       return result;
@@ -201,7 +201,7 @@ export function createService(db, config, payments, mailer) {
         );
         if (order.status !== "paid") return;
         const link = `${config.BASE_URL}/bestelling.html#${order.access_token}`;
-        const html = `<h1>${order.is_test ? "TEST — " : ""}${escapeHtml(order.title)}</h1>
+        const html = `<h1>${order.is_test ? "TEST: " : ""}${escapeHtml(order.title)}</h1>
           <p>Hoi ${escapeHtml(order.buyer_name)}, je betaling is bevestigd.</p>
           <p><a href="${escapeHtml(link)}">Bekijk je ${order.quantity} ticket(s) en QR-codes</a>.</p>
           <p>Deel deze persoonlijke link niet. Vragen? koortsevents@gmail.com</p>`;

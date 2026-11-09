@@ -40,12 +40,12 @@ async function refresh() {
   loginForm.hidden = true;
   dashboard.hidden = false;
   statusEl.className = "notice";
-  statusEl.textContent = `${session.paymentProvider === "disabled" ? "BETALINGEN NIET AANGESLOTEN — inloggen en scannen beschikbaar" : session.paymentMode === "test" ? "TESTMODUS — geen echte betalingen" : "LIVE BETALINGEN"} · Mail: ${session.mailProvider === "preview" ? "preview, er wordt niets verstuurd" : "Resend"}`;
+  statusEl.textContent = `${session.paymentProvider === "disabled" ? "BETALINGEN NIET AANGESLOTEN: inloggen en scannen beschikbaar" : session.paymentMode === "test" ? "TESTMODUS: geen echte betalingen" : "LIVE BETALINGEN"} · Mail: ${session.mailProvider === "preview" ? "preview, er wordt niets verstuurd" : "Resend"}`;
   const [{ events }, { orders }, { users }] = await Promise.all([api("/events"), api("/orders"), api("/users")]);
   document.querySelector("#admin-events").replaceChildren(...events.map(event => {
     const card = document.createElement("article");
     card.className = "event-card";
-    card.append(node("h3", `${event.isTest ? "TEST — " : ""}${event.title}`), node("p", `${new Date(event.startsAt).toLocaleString("nl-NL")} · ${event.location}`), node("p", `${event.capacity} plaatsen · ${event.published ? "Gepubliceerd" : "Privé/concept"}`));
+    card.append(node("h3", `${event.isTest ? "TEST: " : ""}${event.title}`), node("p", `${new Date(event.startsAt).toLocaleString("nl-NL")} · ${event.location}`), node("p", `${event.capacity} plaatsen · ${event.published ? "Gepubliceerd" : "Privé/concept"}`));
     card.append(action(event.scanningEnabled ? "Scannen uitschakelen" : "Scannen inschakelen", () => api(`/events/${event.id}`, { method: "PATCH", body: JSON.stringify({ scanningEnabled: !event.scanningEnabled }) })));
     if (!event.isTest) card.append(action(event.published ? "Verkoop sluiten" : "Verkoop publiceren", () => api(`/events/${event.id}`, { method: "PATCH", body: JSON.stringify({ published: !event.published }) })));
     return card;
@@ -67,7 +67,7 @@ async function refresh() {
   document.querySelector("#manual-test-form button").disabled = !manualSelect.options.length;
   document.querySelector("#admin-orders").replaceChildren(...orders.map(order => {
     const row = document.createElement("tr");
-    for (const value of [`${order.isTest ? "TEST — " : ""}${order.title}`, order.name, order.quantity, order.manualTest ? "TEST — zonder betaling" : order.status, order.manualTest ? "Geen mail (scannertest)" : order.mailStatus || "Nog niet ingepland"]) row.append(node("td", value));
+    for (const value of [`${order.isTest ? "TEST: " : ""}${order.title}`, order.name, order.quantity, order.manualTest ? "TEST: zonder betaling" : order.status, order.manualTest ? "Geen mail (scannertest)" : order.mailStatus || "Nog niet ingepland"]) row.append(node("td", value));
     const cell = document.createElement("td");
     if (order.status === "paid" && !order.manualTest) cell.append(action("Mail opnieuw inplannen", () => api(`/orders/${order.id}/retry-mail`, { method: "POST" })));
     if (order.mailError) cell.append(node("p", order.mailError));
@@ -76,7 +76,7 @@ async function refresh() {
   }));
   document.querySelector("#staff-users").replaceChildren(...users.filter(u => u.role === "staff").map(user => {
     const card = document.createElement("p");
-    card.append(node("span", `${user.username} — ${user.active ? "Actief" : "Geblokkeerd"} `),
+    card.append(node("span", `${user.username}: ${user.active ? "Actief" : "Geblokkeerd"} `),
       action(user.active ? "Blokkeren" : "Activeren", () => api(`/users/${user.id}`, { method: "PATCH", body: JSON.stringify({ active: !user.active }) })));
     return card;
   }));

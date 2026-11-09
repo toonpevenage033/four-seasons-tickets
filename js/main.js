@@ -1,4 +1,4 @@
-// KOORTS-EVENTS — gedeelde scripts
+// KOORTS-EVENTS: gedeelde scripts
 
 // ---------- Hamburger menu ----------
 (function () {
@@ -94,14 +94,14 @@
       "",
       "Ik wil graag een feest aanvragen. Dit zijn de gegevens:",
       "",
-      "— Naam: " + v("naam"),
-      "— E-mail: " + v("email"),
-      v("telefoon") ? "— Telefoon: " + v("telefoon") : null,
-      "— Soort feest: " + soort,
-      v("datum") ? "— Gewenste datum: " + v("datum") : "— Gewenste datum: nog open",
-      v("gasten") ? "— Aantal gasten: ±" + v("gasten") : null,
-      "— Locatie: " + v("locatie"),
-      v("budget") ? "— Indicatie budget: " + v("budget") : null,
+      "Naam: " + v("naam"),
+      "E-mail: " + v("email"),
+      v("telefoon") ? "Telefoon: " + v("telefoon") : null,
+      "Soort feest: " + soort,
+      v("datum") ? "Gewenste datum: " + v("datum") : "Gewenste datum: nog open",
+      v("gasten") ? "Aantal gasten: ±" + v("gasten") : null,
+      "Locatie: " + v("locatie"),
+      v("budget") ? "Indicatie budget: " + v("budget") : null,
       "",
       "Over het feest:",
       v("wensen"),
@@ -110,7 +110,7 @@
       v("naam"),
     ].filter((r) => r !== null);
     const mailto = "mailto:koortsevents@gmail.com" +
-      "?subject=" + encodeURIComponent("Feestaanvraag — " + soort) +
+      "?subject=" + encodeURIComponent("Feestaanvraag: " + soort) +
       "&body=" + encodeURIComponent(regels.join("\n"));
     location.href = mailto;
   });

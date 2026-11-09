@@ -20,7 +20,7 @@ try {
       }
       await db.query(
         `INSERT INTO events(id,title,starts_at,location,price_cents,capacity,is_test)
-         VALUES($1,'KOORTS — TESTEVENEMENT',now()+interval '30 days','Testlocatie (geen echt feest)',1500,100,true)`, [uuid()]
+         VALUES($1,'KOORTS: TESTEVENEMENT',now()+interval '30 days','Testlocatie (geen echt feest)',1500,100,true)`, [uuid()]
       );
       console.log("Privé-testevenement aangemaakt. Niet zichtbaar in publieke verkoop.");
       break;

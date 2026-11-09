@@ -117,8 +117,8 @@ async function orderPage() {
         refunded: "Deze bestelling is terugbetaald of teruggedraaid. De tickets zijn niet geldig.", chargeback: "Deze betaling is teruggedraaid. De tickets zijn niet geldig."
       };
       statusElement.textContent = order.manualTest
-        ? "TEST — QR-testtickets zonder betaling. Alleen geldig voor dit privé-testevenement."
-        : `${order.isTest ? "TEST — " : ""}${labels[order.status] || "Onbekende betaalstatus."}`;
+        ? "TEST: QR-testtickets zonder betaling. Alleen geldig voor dit privé-testevenement."
+        : `${order.isTest ? "TEST: " : ""}${labels[order.status] || "Onbekende betaalstatus."}`;
       const details = document.querySelector("#order-details");
       details.replaceChildren(text("h2", order.event.title), text("p", order.manualTest
         ? `${order.quantity} testticket(s) · Geen betaling · Geen e-mail`
@@ -132,7 +132,7 @@ async function orderPage() {
         img.src = ticket.qrDataUrl;
         img.alt = `QR-code voor ticket ${i + 1}`;
         img.width = img.height = 300;
-        card.append(text("h3", `${order.isTest ? "TEST — " : ""}Ticket ${i + 1}`), img, text("p", ticket.scannedAt ? "Dit ticket is al gescand." : "Laat deze QR-code scannen bij de ingang."));
+        card.append(text("h3", `${order.isTest ? "TEST: " : ""}Ticket ${i + 1}`), img, text("p", ticket.scannedAt ? "Dit ticket is al gescand." : "Laat deze QR-code scannen bij de ingang."));
         return card;
       }));
       if (order.status === "pending" && ++attempts < 60) timer = setTimeout(refresh, 3000);
@@ -157,7 +157,7 @@ async function devPaymentPage() {
   const link = document.querySelector("#dev-order-link");
   link.href = `bestelling.html#${orderToken}`;
   link.hidden = false;
-  statusElement.textContent = `TEST — ${euro(payment.amountCents)} · status: ${payment.status}`;
+  statusElement.textContent = `TEST: ${euro(payment.amountCents)} · status: ${payment.status}`;
   actions.hidden = payment.status !== "open";
   actions.addEventListener("click", async event => {
     const button = event.target.closest("[data-payment-status]");

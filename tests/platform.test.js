@@ -1,5 +1,6 @@
 import { after, before, beforeEach, test } from "node:test";
 import assert from "node:assert/strict";
+import { readFile, readdir } from "node:fs/promises";
 import { loadConfig } from "../server/config.js";
 import { openDatabase, migrate } from "../server/db.js";
 import { createApp } from "../server/app.js";
@@ -84,6 +85,24 @@ test("scanner privacy policy is publicly accessible and linked from public pages
     const response = await request(page);
     assert.equal(response.status, 200);
     assert.match(response.data, /href="scanner-privacy\.html"/);
+  }
+});
+
+test("homepage links directly to party enquiries and website copy has no long dashes", async () => {
+  const home = await request("/");
+  assert.equal(home.status, 200);
+  const hero = home.data.match(/<div class="hero-actions">([\s\S]*?)<\/div>/);
+  assert.ok(hero);
+  assert.match(hero[1], /href="evenementen\.html"/);
+  assert.match(hero[1], /href="fotos\.html"/);
+  assert.match(hero[1], /href="feest-aanvragen\.html" class="btn btn-outline">Boek hier je feest<\/a>/);
+  const enquiry = await request("/feest-aanvragen.html");
+  assert.equal(enquiry.status, 200);
+  assert.match(enquiry.data, /id="party-form"/);
+  const root = new URL("../", import.meta.url);
+  const pages = (await readdir(root)).filter(name => name.endsWith(".html"));
+  for (const file of [...pages, "js/main.js", "js/tickets.js", "js/admin.js", "server/service.js", "server/cli.js"]) {
+    assert.doesNotMatch(await readFile(new URL(file, root), "utf8"), /[—–]/, file);
   }
 });
 
