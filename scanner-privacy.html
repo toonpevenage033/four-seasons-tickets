@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Privacyverklaring KOORTS Scanner — KOORTS-EVENTS</title>
+  <meta name="description" content="Hoe KOORTS Scanner omgaat met accountgegevens, tickets, scans en cameratoegang.">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" type="image/png" href="images/Pictogram.png">
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-inner">
+      <a href="index.html" class="brand-link" aria-label="KOORTS-EVENTS — Home"><img class="brand-icon" src="images/Pictogram.png" alt="" width="800" height="800"><span>KOORTS-EVENTS</span></a>
+    </div>
+  </header>
+
+  <main>
+    <section class="section page-head">
+      <div class="container scanner-privacy">
+        <h1 class="section-title">Privacyverklaring <span class="mark">KOORTS Scanner</span></h1>
+        <p class="section-intro">Laatst bijgewerkt: 9 november 2026. Deze verklaring gaat over de KOORTS Scanner-app voor iOS en Android, niet over de volledige ticketshop.</p>
+      </div>
+    </section>
+
+    <section class="section section-no-top">
+      <div class="container prose scanner-privacy">
+        <h2>1. Wie is verantwoordelijk?</h2>
+        <p>KOORTS-EVENTS is verantwoordelijk voor het gebruik van persoonsgegevens bij het scannen voor onze evenementen. Voor privacyvragen en verzoeken kun je mailen naar <a href="mailto:koortsevents@gmail.com">koortsevents@gmail.com</a>.</p>
+        <p>De app kan verbinding maken met de KOORTS-ticketbackend of rechtstreeks met Tickable. Gebruik je een account of backend van een andere organisator, dan is die organisator verantwoordelijk voor de verwerking binnen die omgeving. Tickable heeft daarnaast eigen privacyvoorwaarden voor zijn dienstverlening.</p>
+
+        <h2>2. Welke gegevens worden verwerkt?</h2>
+        <ul>
+          <li><strong>Account en toegang:</strong> bij personeelslogin worden gebruikersnaam en wachtwoord naar de gekozen backend gestuurd. De KOORTS-backend bewaart een wachtwoordhash, geen leesbaar wachtwoord. De app ontvangt een account-ID, gebruikersnaam, rol en sessietoken.</li>
+          <li><strong>Tickable-login:</strong> de app stuurt de ingevoerde API-key naar Tickable om toegang te controleren. Tickable kan een gebruikers-ID, e-mailadres en organisatienaam teruggeven. De app gebruikt de organisatienaam of het e-mailadres als accountaanduiding.</li>
+          <li><strong>Evenementen:</strong> evenement-ID, naam, datum en locatie worden opgehaald om het juiste evenement te kiezen.</li>
+          <li><strong>Tickets en scans:</strong> de app leest een QR-code. In KOORTS-modus wordt de ticketcode met het gekozen evenement-ID en een unieke aanvraag-ID naar de backend gestuurd. In Tickable-modus wordt een ticket-ID uit de QR-code gehaald en naar Tickable gestuurd voor controle en registratie van de scan.</li>
+          <li><strong>Scanregistratie:</strong> de dienst verwerkt het scanresultaat en, waar beschikbaar, het scantijdstip. De KOORTS-backend koppelt een geldige scan aan het personeelsaccount en bewaart aanvraaggegevens en resultaten om herhaalde aanvragen veilig af te handelen. Ticket-ID's kunnen via de ticketadministratie aan een bezoeker worden gekoppeld.</li>
+          <li><strong>Technische gegevens:</strong> de gekozen backend, Tickable en hosting- of netwerkleveranciers ontvangen bij verbindingen technische gegevens, zoals het IP-adres. Hun infrastructuur kan technische fout- en beveiligingslogboeken bijhouden.</li>
+        </ul>
+        <p>De scanner vraagt niet om betaalgegevens, adresboek, GPS-locatie of microfoontoegang. De ticketdienst kan voor de oorspronkelijke bestelling wel persoonsgegevens verwerken; die verwerking staat los van het invoeren van gegevens in de scanner.</p>
+
+        <h2>3. Cameratoegang</h2>
+        <p>De camera wordt alleen gebruikt om QR-codes te herkennen nadat je cameratoegang hebt toegestaan. De app maakt of bewaart geen foto's, video's of geluidsopnamen en uploadt geen camerabeelden. Alleen de herkende ticketcode of het daaruit afgeleide ticket-ID wordt voor de ticketcontrole verstuurd. Cameratoegang kun je via de instellingen van je apparaat intrekken; scannen werkt dan niet meer.</p>
+
+        <h2>4. Waarom verwerken we deze gegevens?</h2>
+        <p>We gebruiken de gegevens om bevoegde medewerkers toegang te geven, evenementen te tonen, tickets te controleren, gebruik te registreren en misbruik of dubbele toegang te voorkomen. De grondslag is, afhankelijk van de relatie met de betrokkene, uitvoering van de ticket- of dienstverleningsovereenkomst of ons gerechtvaardigd belang bij veilige toegangscontrole en beveiliging. Toestemming voor cameratoegang is een apparaatinstelling en betekent geen toestemming voor andere doeleinden.</p>
+        <p>De app bevat geen advertentie- of analyse-SDK en gebruikt geen gegevens voor advertentietracking. Bij een geweigerd of onduidelijk scanresultaat kun je een medewerker om handmatige controle vragen.</p>
+
+        <h2>5. Opslag en bewaartermijnen</h2>
+        <ul>
+          <li><strong>Op je apparaat:</strong> de app bewaart de backend-URL, het sessietoken of de Tickable API-key, de vervaldatum en de accountaanduiding in beveiligde systeemopslag. Het ingevoerde personeelswachtwoord wordt niet opgeslagen.</li>
+          <li><strong>Lokale sessie:</strong> een KOORTS-sessie is 12 uur geldig. In Tickable-modus vraagt de app na 30 dagen opnieuw om de key; dit trekt de key bij Tickable niet in. Een eventuele eerdere intrekking of vervaldatum bij Tickable blijft van toepassing.</li>
+          <li><strong>Uitloggen:</strong> verwijdert de lokale sessie en probeert in KOORTS-modus ook de serversessie in te trekken. Een Tickable-key moet je afzonderlijk in Tickable intrekken. Beveiligde iOS-systeemopslag kan een herinstallatie overleven; alleen de app verwijderen is daarom geen betrouwbare manier om toegang in te trekken.</li>
+          <li><strong>Scanresultaten op je apparaat:</strong> de app bewaart geen blijvende scangeschiedenis. Het huidige resultaat en een eventuele herhaalpoging staan tijdelijk in het werkgeheugen.</li>
+          <li><strong>Op de server:</strong> uitloggen wist geen ticketadministratie of scanregistraties. De huidige KOORTS-backend heeft voor accounts en scanregistraties geen automatische verwijdertermijn. Verzoeken om verwijdering worden afzonderlijk beoordeeld. Gegevens worden alleen langer behouden voor zover dat nodig is voor toegangscontrole, geschillen, beveiliging of wettelijke verplichtingen. Voor gegevens bij Tickable of een andere backend gelden ook de bewaartermijnen van die dienst of organisator.</li>
+        </ul>
+
+        <h2>6. Met wie worden gegevens gedeeld?</h2>
+        <p>In KOORTS-modus gaan de aanvragen naar de backend die je bij het inloggen kiest. In Tickable-modus communiceert de app rechtstreeks met <a href="https://tickable.nl" rel="noopener">Tickable</a>; de API-key wordt daarbij niet via de KOORTS-website doorgestuurd. Bevoegde organisatoren en medewerkers kunnen gegevens in hun ticketadministratie inzien. Hosting- en infrastructuurleveranciers verwerken gegevens voor het leveren en beveiligen van de dienst.</p>
+        <p>De app verkoopt geen persoonsgegevens. Gegevens kunnen daarnaast worden verstrekt wanneer dat wettelijk verplicht is. De verwerkingslocatie hangt af van de gekozen backend en leveranciers. Bij doorgifte buiten de Europese Economische Ruimte moet de verantwoordelijke organisator zorgen voor passende waarborgen, zoals een adequaatheidsbesluit of standaardcontractbepalingen. Neem contact op voor informatie over jouw evenement en de betrokken leveranciers.</p>
+
+        <h2>7. Beveiliging</h2>
+        <p>De release-app vereist HTTPS voor API-verbindingen en gebruikt beveiligde systeemopslag voor toegangscodes. De KOORTS-backend bewaart wachtwoorden en sessietokens gehasht en controleert de toegang tot scanfuncties. Deel geen API-key of personeelslogin met onbevoegden. Trek bij verlies van een apparaat de key of sessie in via de beheerder; alleen lokaal uitloggen beëindigt niet alle toegang bij Tickable.</p>
+
+        <h2>8. Jouw rechten en contact</h2>
+        <p>Je kunt verzoeken om inzage, correctie, verwijdering of beperking van je persoonsgegevens. Waar van toepassing kun je bezwaar maken tegen verwerking op grond van gerechtvaardigd belang of om overdracht van gegevens vragen. Mail naar <a href="mailto:koortsevents@gmail.com">koortsevents@gmail.com</a> met het onderwerp <strong>Privacy KOORTS Scanner</strong> en vermeld om welk evenement of account het gaat. Stuur geen wachtwoord, API-key of volledige ticket-QR mee.</p>
+        <p>We kunnen aanvullende informatie vragen om je identiteit veilig te controleren. We reageren in beginsel binnen een maand. Verwijdering is niet altijd mogelijk als gegevens nog nodig zijn voor een wettelijke verplichting of een gerechtvaardigd juridisch belang. Bij gegevens van een andere organisator of Tickable verwijzen we je zo nodig naar de juiste partij.</p>
+        <p>Je kunt ook een klacht indienen bij de <a href="https://autoriteitpersoonsgegevens.nl" rel="noopener">Autoriteit Persoonsgegevens</a>.</p>
+
+        <h2>9. Wijzigingen</h2>
+        <p>Bij wijzigingen in de app of gegevensverwerking passen we deze verklaring aan. De datum bovenaan geeft aan wanneer de tekst voor het laatst is bijgewerkt.</p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <span>© 2026 KOORTS-EVENTS — Alle rechten voorbehouden</span>
+      <nav class="footer-nav" aria-label="Footer">
+        <a href="index.html">Home</a>
+        <a href="contact.html">Contact</a>
+        <a href="scanner-privacy.html" aria-current="page">Privacy scanner</a>
+      </nav>
+    </div>
+  </footer>
+</body>
+</html>

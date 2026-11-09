@@ -23,6 +23,8 @@ function harness(initialSession = null) {
   const haptics = [];
   const sounds = [];
   const storageCalls = [];
+  const openedUrls = [];
+  let openUrlFails = false;
   let saved = initialSession ? JSON.stringify(initialSession) : null;
   let deleteFails = false;
   let writeFails = false;
@@ -45,7 +47,13 @@ function harness(initialSession = null) {
     AppState: { currentState: 'active', addEventListener: () => ({ remove() {} }) },
     Platform: { OS: 'ios' },
     StyleSheet: { create: value => value },
-    Linking: { openSettings: async () => {} },
+    Linking: {
+      openSettings: async () => {},
+      openURL: async url => {
+        openedUrls.push(url);
+        if (openUrlFails) throw Error('Browser unavailable');
+      },
+    },
     Alert: { alert() {} },
   };
   for (const name of ['ActivityIndicator', 'Image', 'KeyboardAvoidingView', 'Pressable', 'ScrollView', 'Text', 'TextInput', 'View']) {
@@ -102,11 +110,12 @@ function harness(initialSession = null) {
 
   load(path.resolve(__dirname, '../index.ts'));
   return {
-    App: registered, assets, haptics, sounds, storageCalls,
+    App: registered, assets, haptics, sounds, storageCalls, openedUrls,
     storage: load(path.resolve(__dirname, '../src/storage.ts')),
     get saved() { return saved; },
     set deleteFails(value) { deleteFails = value; },
     set writeFails(value) { writeFails = value; },
+    set openUrlFails(value) { openUrlFails = value; },
   };
 }
 
@@ -129,6 +138,24 @@ test('real entrypoint registers App and renders login with its bundled logo', as
     assert.equal(tree.root.findAllByType('TextInput').length, 3);
     assert.equal(tree.root.findByType('Image').props.source, 1);
     assert.ok(h.assets.some(asset => asset.endsWith('/assets/logo.png')));
+  } finally { if (tree) await act(async () => tree.unmount()); }
+});
+
+test('privacy policy opens before login in both modes and reports browser failures', async () => {
+  const h = harness();
+  let tree;
+  try {
+    await act(async () => { tree = create(React.createElement(h.App)); });
+    await act(async () => button(tree, 'Privacy policy').props.onPress());
+    await act(async () => button(tree, 'Use a Tickable API key instead').props.onPress());
+    await act(async () => button(tree, 'Privacy policy').props.onPress());
+    assert.deepEqual(h.openedUrls, [
+      'https://koortsevents.nl/scanner-privacy.html',
+      'https://koortsevents.nl/scanner-privacy.html',
+    ]);
+    h.openUrlFails = true;
+    await act(async () => button(tree, 'Privacy policy').props.onPress());
+    assert.match(text(tree), /Could not open the privacy policy/);
   } finally { if (tree) await act(async () => tree.unmount()); }
 });
 

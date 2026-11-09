@@ -423,6 +423,13 @@ button:disabled { opacity: 0.6; cursor: wait; }
 
 .prose p:last-child { margin-bottom: 0; }
 
+.scanner-privacy { max-width: 850px; }
+.scanner-privacy h2 { margin: 2rem 0 1rem; }
+.scanner-privacy h2:first-child { margin-top: 0; }
+.scanner-privacy ul { padding-left: 1.5rem; margin-bottom: 1rem; }
+.scanner-privacy li { margin-bottom: 0.75rem; }
+.scanner-privacy a { overflow-wrap: anywhere; }
+
 /* ---------- Contact ---------- */
 
 .contact-list {

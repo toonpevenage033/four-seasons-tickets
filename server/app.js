@@ -234,7 +234,7 @@ export function createApp({ db, config, payments, mailer }) {
   for (const dir of ["css", "js", "images"]) {
     app.use(`/${dir}`, express.static(`${root}/${dir}`, { dotfiles: "deny", index: false }));
   }
-  const pages = ["index", "evenementen", "fotos", "over-ons", "contact", "feest-aanvragen", "tickets", "bestelling", "beheer"];
+  const pages = ["index", "evenementen", "fotos", "over-ons", "contact", "feest-aanvragen", "scanner-privacy", "tickets", "bestelling", "beheer"];
   if (config.PAYMENT_PROVIDER === "mock") pages.push("dev-payment");
   app.get("/", (_req, res) => res.sendFile(`${root}/index.html`));
   for (const name of pages) app.get(`/${name}.html`, (_req, res) => res.sendFile(`${root}/${name}.html`));

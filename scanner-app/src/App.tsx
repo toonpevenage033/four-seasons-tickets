@@ -108,6 +108,10 @@ function Login({ onLogin, notice }: { onLogin: (session: Session) => Promise<voi
       <Text style={s.small}>{mode === 'staff'
         ? 'Your password is never saved. The session is stored in this device’s secure storage.'
         : 'The API key is stored only in this device’s secure storage and expires locally after 30 days.'}</Text>
+      <Button title="Privacy policy" secondary onPress={() => {
+        void Linking.openURL('https://koortsevents.nl/scanner-privacy.html')
+          .catch(() => setError('Could not open the privacy policy. Visit https://koortsevents.nl/scanner-privacy.html in your browser.'));
+      }} />
     </ScrollView>
   </KeyboardAvoidingView>;
 }

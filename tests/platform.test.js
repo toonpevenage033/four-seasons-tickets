@@ -72,6 +72,21 @@ beforeEach(async () => {
   staffToken = staff.data.token;
 });
 
+test("scanner privacy policy is publicly accessible and linked from public pages", async () => {
+  const policy = await request("/scanner-privacy.html");
+  assert.equal(policy.status, 200);
+  assert.match(policy.headers.get("content-type"), /text\/html/);
+  assert.match(policy.data, /Privacyverklaring/);
+  assert.match(policy.data, /koortsevents@gmail\.com/);
+  assert.match(policy.data, /Tickable/);
+  assert.match(policy.data, /geen automatische verwijdertermijn/);
+  for (const page of ["/", "/contact.html"]) {
+    const response = await request(page);
+    assert.equal(response.status, 200);
+    assert.match(response.data, /href="scanner-privacy\.html"/);
+  }
+});
+
 test("configuration refuses unsafe production, live and mock combinations", () => {
   assert.throws(() => loadConfig({ NODE_ENV: "production", DB_DRIVER: "pglite" }), /HTTPS|PostgreSQL/);
   assert.throws(() => loadConfig({ DB_DRIVER: "pglite", PAYMENT_PROVIDER: "mock", BASE_URL: "https://example.com" }), /uitsluitend/);

@@ -4,6 +4,8 @@ Real Android/iOS Expo React Native TypeScript app. Uses the supplied KOORTS artw
 
 ## Development
 
+The scanner privacy policy is available at https://koortsevents.nl/scanner-privacy.html and from the login screen in both login modes. Use this URL in App Store Connect. Adding the in-app link requires a new native release build; previously uploaded builds do not gain it automatically. The policy covers both providers and distinguishes local session expiry from server-side data retention and API-key revocation.
+
 Use Node **24.3+** (tested with 24.21; Node 22.18+ also supports the TypeScript test runner), npm, and an SDK 58-compatible Expo Go or development build.
 
 ```sh
